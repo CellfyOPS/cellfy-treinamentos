@@ -339,7 +339,7 @@ async function enviarCodigo() {
 
   // Envia código via webhook
   try {
-    await fetch('https://script.google.com/macros/s/AKfycbxEuqwkfPVspzNBZQdMF6fcLEpjm2agIu3TTeY5FqTBG7-QKS8Pe6_18lmMYu3Zo1mZ/exec', {
+    await fetch('https://script.google.com/macros/s/AKfycbyUKINq7QNsscnPT1xXFJIStJOi5Xyrv7OYjdWV0JAst-DDWonOJARuOG_yywA8YE_qaA/exec', {
       method: 'POST',
       body: JSON.stringify({
         acao: 'enviarCodigo',
@@ -404,7 +404,7 @@ async function validarCodigo() {
   } catch(e) {}
 
   // Envia para o Google Sheets
-  fetch('https://script.google.com/macros/s/AKfycbxEuqwkfPVspzNBZQdMF6fcLEpjm2agIu3TTeY5FqTBG7-QKS8Pe6_18lmMYu3Zo1mZ/exec', {
+  fetch('https://script.google.com/macros/s/AKfycbyUKINq7QNsscnPT1xXFJIStJOi5Xyrv7OYjdWV0JAst-DDWonOJARuOG_yywA8YE_qaA/exec', {
     method: 'POST',
     body: JSON.stringify({
       treinamentoId:   treinamento.id,
