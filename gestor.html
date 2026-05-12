@@ -386,9 +386,17 @@ function renderHistorico(){
     const link = base + 'presenca.html?d=' + payload;
     var card = document.createElement('div');
     card.className = 'card';
-    card.innerHTML = '<div class="card-top"><div><div class="card-title">'+r.titulo+'</div><div class="card-meta">'+r.gestor+' - '+r.setor+'</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="badge badge-purple">'+(r.tipo||'--')+'</span><span class="badge '+stClass+'">'+stText+'</span></div></div><div class="card-chips"><span class="chip">📅 '+fmtDate(r.data)+'</span>'+(r.carga?' · ⏱ '+r.carga:'')+(r.modalidade?' · 📍 '+r.modalidade:'')+'</div>'+prog+partHTML+'<div class="card-actions"><button class="btn btn-sm btn-ghost copy-link-btn">Copiar link</button><button class="btn btn-sm btn-ghost csv-btn">Exportar CSV</button></div>';
+    card.innerHTML = '<div class="card-top"><div><div class="card-title">'+r.titulo+'</div><div class="card-meta">'+r.gestor+' - '+r.setor+'</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="badge badge-purple">'+(r.tipo||'--')+'</span><span class="badge '+stClass+'">'+stText+'</span></div></div><div class="card-chips"><span class="chip">📅 '+fmtDate(r.data)+'</span>'+(r.carga?' · ⏱ '+r.carga:'')+(r.modalidade?' · 📍 '+r.modalidade:'')+'</div>'+prog+partHTML+'<div class="card-actions"><button class="btn btn-sm btn-ghost copy-link-btn">Copiar link</button><button class="btn btn-sm btn-ghost csv-btn">Exportar CSV</button><button class="btn btn-sm del-btn" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#FCA5A5;border-radius:99px;font-size:12px;padding:7px 14px;cursor:pointer;">Excluir</button></div>';
     card.querySelector('.copy-link-btn').addEventListener('click', function(){ navigator.clipboard.writeText(link).then(function(){ showToast('Link copiado!'); }); });
     card.querySelector('.csv-btn').addEventListener('click', function(){ exportarCSV(r.id); });
+    card.querySelector('.del-btn').addEventListener('click', function(){
+      if(confirm('Excluir este treinamento do histórico?')){
+        treinamentos = treinamentos.filter(function(t){ return t.id !== r.id; });
+        salvar();
+        renderHistorico();
+        showToast('Treinamento removido.');
+      }
+    });
     return card;
   });
   el.innerHTML = '';
