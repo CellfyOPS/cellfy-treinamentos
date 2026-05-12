@@ -360,7 +360,7 @@ function renderHistorico(){
   if(fS) lista = lista.filter(function(r){ return r.setor === fS; });
   const el = document.getElementById('lista-cards');
   if(!lista.length){ el.innerHTML = '<div class="empty">// nenhum treinamento encontrado</div>'; return; }
-  el.innerHTML = lista.map(function(r){
+  var cards = lista.map(function(r){
     const conf = (r.confirmados||[]).length;
     const esp = (r.participantesEsperados||[]).length;
     const pct = esp > 0 ? Math.round(conf/esp*100) : (conf > 0 ? 100 : 0);
@@ -384,8 +384,15 @@ function renderHistorico(){
     const base = window.location.href.replace(/gestor\.html.*$/, '');
     const payload = btoa(encodeURIComponent(JSON.stringify({id:r.id,token:r.token,gestor:r.gestor,setor:r.setor,titulo:r.titulo,tipo:r.tipo,modalidade:r.modalidade,data:r.data,carga:r.carga})));
     const link = base + 'presenca.html?d=' + payload;
-    return '<div class="card"><div class="card-top"><div><div class="card-title">'+r.titulo+'</div><div class="card-meta">'+r.gestor+' - '+r.setor+'</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="badge badge-purple">'+(r.tipo||'--')+'</span><span class="badge '+stClass+'">'+stText+'</span></div></div><div class="card-chips"><span class="chip">📅 '+fmtDate(r.data)+'</span>'+(r.carga?' <span class="chip">⏱ '+r.carga+'</span>':'')+(r.modalidade?' <span class="chip">📍 '+r.modalidade+'</span>':'')+'</div>'+prog+partHTML+'<div class="card-actions"><button class="btn btn-sm btn-ghost" onclick="navigator.clipboard.writeText(''+link+'').then(function(){ showToast('Link copiado!'); })">Copiar link</button><button class="btn btn-sm btn-ghost" onclick="exportarCSV(''+r.id+'')">Exportar CSV</button></div></div>';
-  }).join('');
+    var card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = '<div class="card-top"><div><div class="card-title">'+r.titulo+'</div><div class="card-meta">'+r.gestor+' - '+r.setor+'</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="badge badge-purple">'+(r.tipo||'--')+'</span><span class="badge '+stClass+'">'+stText+'</span></div></div><div class="card-chips"><span class="chip">📅 '+fmtDate(r.data)+'</span>'+(r.carga?' · ⏱ '+r.carga:'')+(r.modalidade?' · 📍 '+r.modalidade:'')+'</div>'+prog+partHTML+'<div class="card-actions"><button class="btn btn-sm btn-ghost copy-link-btn">Copiar link</button><button class="btn btn-sm btn-ghost csv-btn">Exportar CSV</button></div>';
+    card.querySelector('.copy-link-btn').addEventListener('click', function(){ navigator.clipboard.writeText(link).then(function(){ showToast('Link copiado!'); }); });
+    card.querySelector('.csv-btn').addEventListener('click', function(){ exportarCSV(r.id); });
+    return card;
+  });
+  el.innerHTML = '';
+  cards.forEach(function(c){ el.appendChild(c); });
 }
 
 function exportarCSV(id){
