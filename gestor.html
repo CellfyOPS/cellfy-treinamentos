@@ -341,7 +341,7 @@ async function salvarTreinamento(){
     participantesEsperados: participantesTmp.slice(), confirmados:[], criadoEm: new Date().toISOString()};
   treinamentos.unshift(reg); salvar();
   fetch(WEBHOOK, {method:'POST', body:JSON.stringify(Object.assign({acao:'novoTreinamento'}, reg))}).catch(function(){});
-  const payload = btoa(encodeURIComponent(JSON.stringify({id:id,token:token,gestor:gestor,setor:setor,titulo:titulo,tipo:tipo,modalidade:mod,data:data,carga:carga})));
+  const payload = btoa(encodeURIComponent(JSON.stringify({id:id,token:token,gestor:gestor,setor:setor,titulo:titulo,tipo:tipo,modalidade:mod,data:data,carga:carga,participantesEsperados:participantesTmp.slice()})));
   const base = window.location.href.replace(/gestor\.html.*$/, '');
   let link = base + 'presenca.html?d=' + payload;
   document.getElementById('link-display').textContent = 'Encurtando...';
@@ -396,7 +396,7 @@ function renderHistorico(){
     }
     const prog = esp > 0 ? '<div class="progress-wrap"><div class="progress-label"><span>Presenca</span><span>'+conf+'/'+esp+' ('+pct+'%)</span></div><div class="progress-track"><div class="progress-fill '+(isFull?'full':'')+'" style="width:'+pct+'%"></div></div></div>' : '';
     const base = window.location.href.replace(/gestor\.html.*$/, '');
-    const payload = btoa(encodeURIComponent(JSON.stringify({id:r.id,token:r.token,gestor:r.gestor,setor:r.setor,titulo:r.titulo,tipo:r.tipo,modalidade:r.modalidade,data:r.data,carga:r.carga})));
+    const payload = btoa(encodeURIComponent(JSON.stringify({id:r.id,token:r.token,gestor:r.gestor,setor:r.setor,titulo:r.titulo,tipo:r.tipo,modalidade:r.modalidade,data:r.data,carga:r.carga,participantesEsperados:r.participantesEsperados||[]})));
     const link = base + 'presenca.html?d=' + payload;
     var card = document.createElement('div');
     card.className = 'card';
