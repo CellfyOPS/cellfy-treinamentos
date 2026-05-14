@@ -466,6 +466,33 @@ function trocarSenha(){
 }
 
 // Event listeners (sem inline handlers problemáticos)
+// ===== SINCRONIZAR CONFIRMADOS DA PLANILHA =====
+async function sincronizarConfirmados() {
+  for(var i = 0; i < treinamentos.length; i++) {
+    var r = treinamentos[i];
+    // Só busca se o gestor logado for dono ou for master
+    if(!currentUser.master && r.gestorKey !== currentUser.key) continue;
+    try {
+      var url = WEBHOOK + '?acao=getConfirmados&id=' + encodeURIComponent(r.id);
+      var resp = await fetch(url);
+      var confirmados = await resp.json();
+      if(Array.isArray(confirmados) && confirmados.length > 0) {
+        // Mescla com os confirmados locais evitando duplicatas
+        var existentes = (r.confirmados||[]).map(function(c){ return c.email+c.timestamp; });
+        confirmados.forEach(function(c) {
+          var chave = c.email + c.timestamp;
+          if(existentes.indexOf(chave) === -1) {
+            if(!treinamentos[i].confirmados) treinamentos[i].confirmados = [];
+            treinamentos[i].confirmados.push(c);
+            existentes.push(chave);
+          }
+        });
+      }
+    } catch(e) {}
+  }
+  salvar();
+}
+
 // ===== CONTROLE DE INATIVIDADE (30 min) =====
 var TIMEOUT_MS = 30 * 60 * 1000; // 30 minutos
 var inactivityTimer = null;
@@ -527,14 +554,24 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('btn-ver-hist').addEventListener('click', function(){ document.getElementById('modal').classList.remove('open'); switchView('historico'); });
   document.getElementById('btn-salvar-senha').addEventListener('click', trocarSenha);
   document.getElementById('filtro-setor-hist').addEventListener('change', renderHistorico);
-  document.getElementById('btn-refresh-hist').addEventListener('click', function(){
-    treinamentos = JSON.parse(localStorage.getItem('cellfy_treinamentos') || '[]');
+  document.getElementById('btn-refresh-hist').addEventListener('click', async function(){
+    var btn = document.getElementById('btn-refresh-hist');
+    btn.textContent = '↻ Buscando...';
+    btn.disabled = true;
+    await sincronizarConfirmados();
     renderHistorico();
+    btn.textContent = '↻ Atualizar';
+    btn.disabled = false;
     showToast('Histórico atualizado!');
   });
-  document.getElementById('btn-refresh-painel').addEventListener('click', function(){
-    treinamentos = JSON.parse(localStorage.getItem('cellfy_treinamentos') || '[]');
+  document.getElementById('btn-refresh-painel').addEventListener('click', async function(){
+    var btn = document.getElementById('btn-refresh-painel');
+    btn.textContent = '↻ Buscando...';
+    btn.disabled = true;
+    await sincronizarConfirmados();
     renderPainel();
+    btn.textContent = '↻ Atualizar';
+    btn.disabled = false;
     showToast('Painel atualizado!');
   });
   document.getElementById('filtro-gestor-hist').addEventListener('change', renderHistorico);
