@@ -180,7 +180,10 @@ main{max-width:860px;margin:0 auto;padding:32px 24px 80px}
       <button class="btn btn-primary" style="margin-top:20px" id="btn-gerar">Gerar link de presença →</button>
     </div>
     <div class="view" id="view-historico">
-      <div class="section-head"><h1>Histórico</h1><p>// registros com controle de presença</p></div>
+      <div class="section-head" style="display:flex;align-items:center;justify-content:space-between">
+        <div><h1>Histórico</h1><p>// registros com controle de presença</p></div>
+        <button class="btn btn-sm btn-ghost" id="btn-refresh-hist" style="gap:6px">↻ Atualizar</button>
+      </div>
       <div class="filter-row" id="filter-row-hist" style="display:none">
         <select id="filtro-gestor-hist"><option value="">Todos os gestores</option></select>
         <select id="filtro-setor-hist">
@@ -193,7 +196,10 @@ main{max-width:860px;margin:0 auto;padding:32px 24px 80px}
       <div id="lista-cards"></div>
     </div>
     <div class="view" id="view-painel">
-      <div class="section-head"><h1>Painel geral</h1><p>// visão consolidada</p></div>
+      <div class="section-head" style="display:flex;align-items:center;justify-content:space-between">
+        <div><h1>Painel geral</h1><p>// visão consolidada</p></div>
+        <button class="btn btn-sm btn-ghost" id="btn-refresh-painel" style="gap:6px">↻ Atualizar</button>
+      </div>
       <div class="stats-grid" id="stats-grid"></div>
       <div id="painel-content"></div>
     </div>
@@ -479,6 +485,16 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('btn-ver-hist').addEventListener('click', function(){ document.getElementById('modal').classList.remove('open'); switchView('historico'); });
   document.getElementById('btn-salvar-senha').addEventListener('click', trocarSenha);
   document.getElementById('filtro-setor-hist').addEventListener('change', renderHistorico);
+  document.getElementById('btn-refresh-hist').addEventListener('click', function(){
+    treinamentos = JSON.parse(localStorage.getItem('cellfy_treinamentos') || '[]');
+    renderHistorico();
+    showToast('Histórico atualizado!');
+  });
+  document.getElementById('btn-refresh-painel').addEventListener('click', function(){
+    treinamentos = JSON.parse(localStorage.getItem('cellfy_treinamentos') || '[]');
+    renderPainel();
+    showToast('Painel atualizado!');
+  });
   document.getElementById('filtro-gestor-hist').addEventListener('change', renderHistorico);
   document.getElementById('f-data').value = new Date().toISOString().split('T')[0];
 });
