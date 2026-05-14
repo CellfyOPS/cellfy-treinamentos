@@ -384,12 +384,12 @@ function renderHistorico(){
       const confirmados = r.confirmados||[];
       partHTML = '<div class="part-list">' +
         r.participantesEsperados.map(function(n){
-          // Verifica pelo nomeOriginal (vínculo exato) ou pelo nome digitado
+          // Matching exato pelo nomeOriginal ou nome completo
           const ok = confirmados.some(function(c){
-            const orig = (c.nomeOriginal||'').toLowerCase();
-            const nome = (c.nome||'').toLowerCase();
-            const esperado = n.toLowerCase();
-            return orig === esperado || nome === esperado || orig.indexOf(esperado) >= 0 || esperado.indexOf((orig||nome).split(' ')[0]) >= 0;
+            const orig = (c.nomeOriginal||'').trim().toLowerCase();
+            const nome = (c.nome||'').trim().toLowerCase();
+            const esperado = n.trim().toLowerCase();
+            return orig === esperado || nome === esperado;
           });
           return '<div class="part-item '+(ok?'confirmed':'pending')+'"><span class="part-name">'+n+'</span><span class="part-status">'+(ok?'Confirmado':'Pendente')+'</span></div>';
         }).join('') + '</div>';
