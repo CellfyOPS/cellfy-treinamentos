@@ -161,10 +161,11 @@ main{max-width:860px;margin:0 auto;padding:32px 24px 80px}
           </select>
         </div>
       </div>
-      <div class="grid3" style="margin-top:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-top:12px">
         <div class="fg"><label>Data</label><input id="f-data" type="date"></div>
         <div class="fg"><label>Carga horária</label><input id="f-carga" placeholder="Ex: 4h"></div>
-        <div class="fg"><label>Custo (opcional)</label><input id="f-custo" placeholder="Ex: R$ 0"></div>
+        <div class="fg" style=""><label>Investimento (R$)</label><input id="f-custo" placeholder="Ex: 0,00" oninput="formatarMoeda(this)"></div>
+        <div class="fg"><label>Validade</label><input id="f-validade" placeholder="Ex: 12 meses"></div>
       </div>
       <div class="fg" style="margin-top:12px">
         <label>Participantes esperados</label>
@@ -174,8 +175,8 @@ main{max-width:860px;margin:0 auto;padding:32px 24px 80px}
           <button class="btn-add" id="btn-add-part">+ Adicionar</button>
         </div>
       </div>
-      <div class="fg" style="margin-top:12px"><label>Conteúdo / Observações</label>
-        <textarea id="f-obs" placeholder="Descreva o conteúdo..."></textarea>
+      <div class="fg" style="margin-top:12px"><label>Objetivo</label>
+        <textarea id="f-obs" placeholder="Descreva o objetivo do treinamento..."></textarea>
       </div>
       <button class="btn btn-primary" style="margin-top:20px" id="btn-gerar">Gerar link de presença →</button>
     </div>
@@ -327,6 +328,12 @@ function renderTags(){
   }).join('');
 }
 
+function formatarMoeda(input) {
+  var v = input.value.replace(/\D/g, '');
+  v = (parseInt(v)||0) / 100;
+  input.value = v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
 async function salvarTreinamento(){
   const gestor = document.getElementById('f-gestor').value.trim();
   const setor = document.getElementById('f-setor').value;
@@ -336,12 +343,14 @@ async function salvarTreinamento(){
   const data = document.getElementById('f-data').value;
   const carga = document.getElementById('f-carga').value.trim();
   const custo = document.getElementById('f-custo').value.trim();
-  const obs = document.getElementById('f-obs').value.trim();
+  const obs      = document.getElementById('f-obs').value.trim();
+  const validade = document.getElementById('f-validade').value.trim();
   if(!gestor||!setor||!titulo||!tipo||!data){ showToast('Preencha os campos obrigatorios.'); return; }
   const id = 'tr_' + Date.now();
   const token = btoa(id).replace(/=/g,'');
+  const custoFmt = custo ? 'R$ ' + custo : '';
   const reg = {id:id, token:token, gestor:gestor, gestorKey:currentUser.key, setor:setor,
-    titulo:titulo, tipo:tipo, modalidade:mod, data:data, carga:carga, custo:custo, obs:obs,
+    titulo:titulo, tipo:tipo, modalidade:mod, data:data, carga:carga, custo:custoFmt, validade:validade, obs:obs,
     participantesEsperados: participantesTmp.slice(), confirmados:[], criadoEm: new Date().toISOString()};
   treinamentos.unshift(reg); salvar();
   fetch(WEBHOOK, {method:'POST', body:JSON.stringify(Object.assign({acao:'novoTreinamento'}, reg))}).catch(function(){});
@@ -357,7 +366,7 @@ async function salvarTreinamento(){
   } catch(e){}
   linkAtual = link;
   document.getElementById('link-display').textContent = link;
-  ['f-titulo','f-carga','f-custo','f-obs'].forEach(function(x){ document.getElementById(x).value=''; });
+  ['f-titulo','f-carga','f-custo','f-validade','f-obs'].forEach(function(x){ document.getElementById(x).value=''; });
   ['f-tipo','f-modalidade'].forEach(function(x){ document.getElementById(x).value=''; });
   document.getElementById('f-data').value = new Date().toISOString().split('T')[0];
   participantesTmp = []; renderTags();
