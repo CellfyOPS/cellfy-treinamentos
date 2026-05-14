@@ -262,6 +262,7 @@ function doLogin(){
   const u = USERS[user];
   if(!u || u.senha !== pass){ document.getElementById('login-err').style.display='block'; return; }
   currentUser = Object.assign({key:user}, u);
+  localStorage.setItem('cellfy_session', user);
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app-screen').style.display='block';
   document.getElementById('h-username').textContent = u.nome;
@@ -284,6 +285,7 @@ function doLogin(){
 
 function doLogout(){
   currentUser = null;
+  localStorage.removeItem('cellfy_session');
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app-screen').style.display = 'none';
   document.getElementById('login-user').value = '';
@@ -369,10 +371,16 @@ function renderHistorico(){
     const stClass = conf > 0 ? 'badge-green' : 'badge-warn';
     let partHTML = '';
     if(esp > 0){
-      const cNames = (r.confirmados||[]).map(function(c){ return c.nome.toLowerCase(); });
+      const confirmados = r.confirmados||[];
       partHTML = '<div class="part-list">' +
         r.participantesEsperados.map(function(n){
-          const ok = cNames.some(function(cn){ return cn.indexOf(n.toLowerCase().split(' ')[0]) >= 0; });
+          // Verifica pelo nomeOriginal (vínculo exato) ou pelo nome digitado
+          const ok = confirmados.some(function(c){
+            const orig = (c.nomeOriginal||'').toLowerCase();
+            const nome = (c.nome||'').toLowerCase();
+            const esperado = n.toLowerCase();
+            return orig === esperado || nome === esperado || orig.indexOf(esperado) >= 0 || esperado.indexOf((orig||nome).split(' ')[0]) >= 0;
+          });
           return '<div class="part-item '+(ok?'confirmed':'pending')+'"><span class="part-name">'+n+'</span><span class="part-status">'+(ok?'Confirmado':'Pendente')+'</span></div>';
         }).join('') + '</div>';
     } else if(conf > 0){
@@ -449,6 +457,13 @@ function trocarSenha(){
 
 // Event listeners (sem inline handlers problemáticos)
 document.addEventListener('DOMContentLoaded', function(){
+  // Auto-login se tiver sessão salva
+  var sessao = localStorage.getItem('cellfy_session');
+  if(sessao && USERS[sessao]) {
+    document.getElementById('login-user').value = sessao;
+    document.getElementById('login-pass').value = USERS[sessao].senha;
+    doLogin();
+  }
   document.getElementById('btn-entrar').addEventListener('click', doLogin);
   document.getElementById('login-pass').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
   document.getElementById('btn-sair').addEventListener('click', doLogout);
