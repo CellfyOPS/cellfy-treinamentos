@@ -220,11 +220,9 @@
       <select id="nome-select" style="background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-family:'Syne',sans-serif;font-size:15px;color:var(--white);outline:none;width:100%;margin-bottom:8px">
         <option value="">Selecione seu nome...</option>
       </select>
-      <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:8px">Não está na lista?</div>
-      <input type="text" id="nome-outro" placeholder="Digite seu nome completo" style="display:none;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-family:'Syne',sans-serif;font-size:15px;color:var(--white);outline:none;width:100%;margin-bottom:8px" />
-      <button onclick="toggleNomeManual()" id="btn-outro" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;width:100%;text-align:center">Digitar nome manualmente</button>
     </div>
     <input type="text" id="nome" placeholder="Como aparece no crachá" autocomplete="name" />
+    <input type="text" id="nome-outro" style="display:none" />
 
     <label>E-mail corporativo (opcional)</label>
     <input type="email" id="email" placeholder="seu@cellfy.com.br" autocomplete="email" />
@@ -310,18 +308,7 @@ if(!payload) {
         var opt = document.createElement('option');
         opt.value = p; opt.textContent = p; sel.appendChild(opt);
       });
-      // Opção "Outro"
-      var optOutro = document.createElement('option');
-      optOutro.value = '__outro__'; optOutro.textContent = 'Meu nome não está na lista';
-      sel.appendChild(optOutro);
-      sel.addEventListener('change', function() {
-        if(this.value === '__outro__') {
-          document.getElementById('nome-outro').style.display = 'block';
-          document.getElementById('btn-outro').style.display = 'none';
-        } else {
-          document.getElementById('nome-outro').style.display = 'none';
-        }
-      });
+
     }
     document.getElementById('decl-titulo').textContent = treinamento.titulo;
     document.getElementById('decl-gestor').textContent = treinamento.gestor;
@@ -347,28 +334,10 @@ let _nomeTemp = '';
 let _emailTemp = '';
 let _nomeOriginal = '';
 
-function toggleNomeManual() {
-  var outro = document.getElementById('nome-outro');
-  var btn = document.getElementById('btn-outro');
-  var sel = document.getElementById('nome-select');
-  if(outro.style.display === 'none') {
-    outro.style.display = 'block';
-    sel.style.display = 'none';
-    btn.textContent = 'Selecionar da lista';
-    outro.focus();
-  } else {
-    outro.style.display = 'none';
-    sel.style.display = 'block';
-    btn.textContent = 'Digitar nome manualmente';
-  }
-}
-
 function getNome() {
   var wrap = document.getElementById('nome-select-wrap');
-  if(wrap.style.display !== 'none') {
+  if(wrap && wrap.style.display !== 'none') {
     var sel = document.getElementById('nome-select');
-    var outro = document.getElementById('nome-outro');
-    if(outro.style.display !== 'none') return outro.value.trim();
     return sel.value.trim();
   }
   return document.getElementById('nome').value.trim();
@@ -398,8 +367,9 @@ async function enviarCodigo() {
   _nomeTemp  = nome;
   _emailTemp = email;
   // Salva o nome da lista (se selecionado) para vincular corretamente
+  var wrap = document.getElementById('nome-select-wrap');
   var sel = document.getElementById('nome-select');
-  _nomeOriginal = (sel && sel.value && document.getElementById('nome-outro').style.display === 'none' && document.getElementById('nome-select-wrap').style.display !== 'none') ? sel.value : nome;
+  _nomeOriginal = (wrap && wrap.style.display !== 'none' && sel && sel.value) ? sel.value : nome;
 
   // Envia código via webhook
   try {
