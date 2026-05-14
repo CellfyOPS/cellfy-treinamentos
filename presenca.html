@@ -215,7 +215,15 @@
     <h2>Confirmar presença</h2>
     <p>// preencha seus dados para registrar a participação</p>
 
-    <label>Seu nome completo</label>
+    <label>Seu nome</label>
+    <div id="nome-select-wrap" style="display:none">
+      <select id="nome-select" style="background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-family:'Syne',sans-serif;font-size:15px;color:var(--white);outline:none;width:100%;margin-bottom:8px">
+        <option value="">Selecione seu nome...</option>
+      </select>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:8px">Não está na lista?</div>
+      <input type="text" id="nome-outro" placeholder="Digite seu nome completo" style="display:none;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-family:'Syne',sans-serif;font-size:15px;color:var(--white);outline:none;width:100%;margin-bottom:8px" />
+      <button onclick="toggleNomeManual()" id="btn-outro" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;width:100%;text-align:center">Digitar nome manualmente</button>
+    </div>
     <input type="text" id="nome" placeholder="Como aparece no crachá" autocomplete="name" />
 
     <label>E-mail corporativo (opcional)</label>
@@ -290,6 +298,31 @@ if(!payload) {
       treinamento.gestor ? `Gestor: ${treinamento.gestor}` : null,
     ].filter(Boolean);
     document.getElementById('info-chips').innerHTML = chips.map(c=>`<span class="chip">${c}</span>`).join('');
+
+    // Se tiver lista de participantes esperados, mostra select
+    if(treinamento.participantesEsperados && treinamento.participantesEsperados.length > 0) {
+      var wrap = document.getElementById('nome-select-wrap');
+      var nomePadrao = document.getElementById('nome');
+      var sel = document.getElementById('nome-select');
+      wrap.style.display = 'block';
+      nomePadrao.style.display = 'none';
+      treinamento.participantesEsperados.forEach(function(p) {
+        var opt = document.createElement('option');
+        opt.value = p; opt.textContent = p; sel.appendChild(opt);
+      });
+      // Opção "Outro"
+      var optOutro = document.createElement('option');
+      optOutro.value = '__outro__'; optOutro.textContent = 'Meu nome não está na lista';
+      sel.appendChild(optOutro);
+      sel.addEventListener('change', function() {
+        if(this.value === '__outro__') {
+          document.getElementById('nome-outro').style.display = 'block';
+          document.getElementById('btn-outro').style.display = 'none';
+        } else {
+          document.getElementById('nome-outro').style.display = 'none';
+        }
+      });
+    }
     document.getElementById('decl-titulo').textContent = treinamento.titulo;
     document.getElementById('decl-gestor').textContent = treinamento.gestor;
     document.getElementById('decl-data').textContent   = fmtDate(treinamento.data);
@@ -312,9 +345,37 @@ function showError() {
 let _codigoGerado = '';
 let _nomeTemp = '';
 let _emailTemp = '';
+let _nomeOriginal = '';
+
+function toggleNomeManual() {
+  var outro = document.getElementById('nome-outro');
+  var btn = document.getElementById('btn-outro');
+  var sel = document.getElementById('nome-select');
+  if(outro.style.display === 'none') {
+    outro.style.display = 'block';
+    sel.style.display = 'none';
+    btn.textContent = 'Selecionar da lista';
+    outro.focus();
+  } else {
+    outro.style.display = 'none';
+    sel.style.display = 'block';
+    btn.textContent = 'Digitar nome manualmente';
+  }
+}
+
+function getNome() {
+  var wrap = document.getElementById('nome-select-wrap');
+  if(wrap.style.display !== 'none') {
+    var sel = document.getElementById('nome-select');
+    var outro = document.getElementById('nome-outro');
+    if(outro.style.display !== 'none') return outro.value.trim();
+    return sel.value.trim();
+  }
+  return document.getElementById('nome').value.trim();
+}
 
 async function enviarCodigo() {
-  const nome  = document.getElementById('nome').value.trim();
+  const nome  = getNome();
   const email = document.getElementById('email').value.trim();
 
   if(!nome) {
@@ -336,6 +397,9 @@ async function enviarCodigo() {
   _codigoGerado = Math.floor(100000 + Math.random() * 900000).toString();
   _nomeTemp  = nome;
   _emailTemp = email;
+  // Salva o nome da lista (se selecionado) para vincular corretamente
+  var sel = document.getElementById('nome-select');
+  _nomeOriginal = (sel && sel.value && document.getElementById('nome-outro').style.display === 'none' && document.getElementById('nome-select-wrap').style.display !== 'none') ? sel.value : nome;
 
   // Envia código via webhook
   try {
@@ -376,6 +440,7 @@ async function validarCodigo() {
 
   const nome  = _nomeTemp;
   const email = _emailTemp;
+  const nomeOriginal = _nomeOriginal;
 
   async function confirmar() {
   const nome  = document.getElementById('nome').value.trim();
@@ -416,6 +481,7 @@ async function validarCodigo() {
       dataTreinamento: treinamento.data,
       carga:           treinamento.carga,
       nome:            nome,
+      nomeOriginal:    _nomeOriginal,
       email:           email,
       timestamp:       timestamp,
       ip:              ip
