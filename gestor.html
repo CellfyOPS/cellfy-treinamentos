@@ -269,6 +269,8 @@ function doLogin(){
   if(!u || u.senha !== pass){ document.getElementById('login-err').style.display='block'; return; }
   currentUser = Object.assign({key:user}, u);
   localStorage.setItem('cellfy_session', user);
+  localStorage.setItem('cellfy_session_time', Date.now());
+  resetTimer();
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app-screen').style.display='block';
   document.getElementById('h-username').textContent = u.nome;
@@ -292,6 +294,8 @@ function doLogin(){
 function doLogout(){
   currentUser = null;
   localStorage.removeItem('cellfy_session');
+  localStorage.removeItem('cellfy_session_time');
+  clearTimeout(inactivityTimer);
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app-screen').style.display = 'none';
   document.getElementById('login-user').value = '';
@@ -462,14 +466,52 @@ function trocarSenha(){
 }
 
 // Event listeners (sem inline handlers problemáticos)
+// ===== CONTROLE DE INATIVIDADE (30 min) =====
+var TIMEOUT_MS = 30 * 60 * 1000; // 30 minutos
+var inactivityTimer = null;
+
+function resetTimer() {
+  localStorage.setItem('cellfy_session_time', Date.now());
+  clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(function() {
+    if(currentUser) {
+      showToast('Sessão expirada por inatividade.');
+      setTimeout(doLogout, 1500);
+    }
+  }, TIMEOUT_MS);
+}
+
+function checkSessionExpiry() {
+  var sessionTime = parseInt(localStorage.getItem('cellfy_session_time') || '0');
+  if(sessionTime && Date.now() - sessionTime > TIMEOUT_MS) {
+    localStorage.removeItem('cellfy_session');
+  localStorage.removeItem('cellfy_session_time');
+  clearTimeout(inactivityTimer);
+    localStorage.removeItem('cellfy_session_time');
+    return false;
+  }
+  return true;
+}
+
 document.addEventListener('DOMContentLoaded', function(){
   // Auto-login se tiver sessão salva
   var sessao = localStorage.getItem('cellfy_session');
-  if(sessao && USERS[sessao]) {
+  if(sessao && USERS[sessao] && checkSessionExpiry()) {
     document.getElementById('login-user').value = sessao;
     document.getElementById('login-pass').value = USERS[sessao].senha;
     doLogin();
+    resetTimer();
+  } else if(sessao) {
+    localStorage.removeItem('cellfy_session');
+  localStorage.removeItem('cellfy_session_time');
+  clearTimeout(inactivityTimer);
+    localStorage.removeItem('cellfy_session_time');
   }
+
+  // Monitora atividade do usuário
+  ['mousemove','keydown','click','scroll','touchstart'].forEach(function(evt) {
+    document.addEventListener(evt, resetTimer, { passive: true });
+  });
   document.getElementById('btn-entrar').addEventListener('click', doLogin);
   document.getElementById('login-pass').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
   document.getElementById('btn-sair').addEventListener('click', doLogout);
