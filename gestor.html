@@ -792,15 +792,13 @@ function exportarCSV(id) {
 }
 
 // ===== PAINEL =====
+var painelFiltroAtivo = {de: '', ate: ''};
+
 function renderPainel() {
-  var dataDeEl = document.getElementById('painel-data-de');
-  var dataAteEl = document.getElementById('painel-data-ate');
-  var dataDe = dataDeEl ? dataDeEl.value : '';
-  var dataAte = dataAteEl ? dataAteEl.value : '';
   var lista = (currentUser.master?treinamentos:treinamentos.filter(function(r){return r.gestorKey===currentUser.key||r.gestor===currentUser.nome;}))
     .filter(function(r){
-      if(dataDe && r.data < dataDe) return false;
-      if(dataAte && r.data > dataAte) return false;
+      if(painelFiltroAtivo.de && r.data < painelFiltroAtivo.de) return false;
+      if(painelFiltroAtivo.ate && r.data > painelFiltroAtivo.ate) return false;
       return true;
     });
   var total=lista.length;
@@ -1139,8 +1137,14 @@ document.addEventListener('DOMContentLoaded', async function() {
   document.getElementById('btn-salvar-senha').addEventListener('click', trocarSenha);
   document.getElementById('filtro-setor-hist').addEventListener('change', renderHistorico);
   document.getElementById('filtro-gestor-hist').addEventListener('change', renderHistorico);
-  document.getElementById('btn-filtrar-painel').addEventListener('click', renderPainel);
+  document.getElementById('btn-filtrar-painel').addEventListener('click', function() {
+    painelFiltroAtivo.de  = document.getElementById('painel-data-de').value;
+    painelFiltroAtivo.ate = document.getElementById('painel-data-ate').value;
+    renderPainel();
+  });
   document.getElementById('btn-limpar-filtro-painel').addEventListener('click', function() {
+    painelFiltroAtivo.de  = '';
+    painelFiltroAtivo.ate = '';
     document.getElementById('painel-data-de').value='';
     document.getElementById('painel-data-ate').value='';
     renderPainel();
