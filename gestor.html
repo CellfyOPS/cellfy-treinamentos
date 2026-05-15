@@ -520,9 +520,18 @@ function carregarColabLista() {
     return c.setor === area;
   });
   var el = document.getElementById('colab-lista');
-  if(!lista.length) { el.style.display='none'; return; }
+  if(!lista.length) { el.style.display='none'; showToast('Nenhum colaborador nessa área.'); return; }
   el.style.display='block';
   el.innerHTML = '';
+
+  // Adiciona todos automaticamente que ainda não estão na lista
+  lista.forEach(function(c) {
+    if(participantesTmp.indexOf(c.nome) === -1) {
+      participantesTmp.push(c.nome);
+    }
+  });
+  renderTags();
+
   lista.forEach(function(c) {
     var statusClass = c.status==='Férias'?'ferias':(c.status==='Afastado'?'afastado':'ativo');
     var isSelected = participantesTmp.indexOf(c.nome)>=0;
