@@ -471,6 +471,9 @@ async function doLogin() {
   // Carrega tudo em paralelo
   await Promise.all([carregarColaboradores(), carregarPendencias(), carregarTreinamentos()]);
   iniciarApp();
+  // Já abre o histórico com dados carregados
+  await sincronizarConfirmados();
+  renderHistorico();
 }
 
 function iniciarApp() {
@@ -514,17 +517,25 @@ function switchView(v) {
   document.getElementById('view-'+v).classList.add('active');
   document.getElementById('nav-'+v).classList.add('active');
   if(v==='historico') {
+    renderHistorico(); // renderiza imediatamente com dados em cache
     carregarTreinamentos().then(function() {
-      sincronizarConfirmados().then(renderHistorico);
+      sincronizarConfirmados().then(renderHistorico); // atualiza em background
     });
   }
   if(v==='painel') {
+    renderPainel(); // renderiza imediatamente
     carregarTreinamentos().then(function() {
-      sincronizarConfirmados().then(renderPainel);
+      sincronizarConfirmados().then(renderPainel); // atualiza em background
     });
   }
-  if(v==='equipe') { carregarColaboradores().then(renderEquipe); }
-  if(v==='pendencias') { carregarPendencias().then(renderPendencias); }
+  if(v==='equipe') {
+    renderEquipe(); // renderiza imediatamente
+    carregarColaboradores().then(renderEquipe); // atualiza em background
+  }
+  if(v==='pendencias') {
+    renderPendencias(); // renderiza imediatamente
+    carregarPendencias().then(renderPendencias); // atualiza em background
+  }
 }
 
 // ===== PARTICIPANTES =====
