@@ -500,10 +500,10 @@ function switchView(v) {
   document.querySelectorAll('.nav-btn').forEach(function(el){ el.classList.remove('active'); });
   document.getElementById('view-'+v).classList.add('active');
   document.getElementById('nav-'+v).classList.add('active');
-  if(v==='historico') renderHistorico();
-  if(v==='painel') renderPainel();
-  if(v==='equipe') renderEquipe();
-  if(v==='pendencias') renderPendencias();
+  if(v==='historico') { sincronizarConfirmados().then(renderHistorico); }
+  if(v==='painel') { sincronizarConfirmados().then(renderPainel); }
+  if(v==='equipe') { carregarColaboradores().then(renderEquipe); }
+  if(v==='pendencias') { carregarPendencias().then(renderPendencias); }
 }
 
 // ===== PARTICIPANTES =====
@@ -814,13 +814,65 @@ function renderPainel() {
 function renderEquipe() {
   // Gestores
   var gestEl=document.getElementById('lista-gestores');
-  gestEl.innerHTML=Object.entries(USERS).map(function(e) {
-    var u=e[1];
-    return '<div class="card" style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:center">'
-      +'<div><div style="font-size:13px;font-weight:600">'+u.nome+'</div><div style="font-size:11px;color:var(--muted);font-family:\"DM Mono\",monospace">'+e[0]+' · '+u.setor+'</div></div>'
+  gestEl.innerHTML = '';
+  Object.entries(USERS).forEach(function(entry) {
+    var key = entry[0]; var u = entry[1];
+    var div = document.createElement('div');
+    div.className = 'card'; div.style.marginBottom = '8px';
+    div.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center">'
+      +'<div><div style="font-size:13px;font-weight:600">'+u.nome+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);font-family:DM Mono,monospace">'+key+' · '+u.setor+'</div></div>'
+      +'<div style="display:flex;gap:8px;align-items:center">'
       +'<span class="badge '+(u.master?'badge-warn':'badge-purple')+'">'+(u.master?'Master':'Gestor')+'</span>'
+      +'<button class="btn btn-sm btn-ghost edit-gest-btn" style="font-size:11px;padding:4px 10px">Editar</button>'
+      +'</div></div>'
+      +'<div class="edit-gest-form" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
+      +'<div class="fg" style="margin-bottom:0"><label>Nome</label><input class="gest-nome-inp" value="'+u.nome+'" style="margin-bottom:0"></div>'
+      +'<div class="fg" style="margin-bottom:0"><label>Setor</label>'
+      +'<select class="gest-setor-sel" style="margin-bottom:0;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--white);font-size:13px;outline:none">'
+      +'<option value="Customer OPS"'+(u.setor==='Customer OPS'?' selected':'')+'>Customer OPS</option>'
+      +'<option value="Marketing"'+(u.setor==='Marketing'?' selected':'')+'>Marketing</option>'
+      +'<option value="RMA"'+(u.setor==='RMA'?' selected':'')+'>RMA</option>'
+      +'<option value="RH"'+(u.setor==='RH'?' selected':'')+'>RH</option>'
+      +'<option value="Comercial"'+(u.setor==='Comercial'?' selected':'')+'>Comercial</option>'
+      +'<option value="Logística"'+(u.setor==='Logística'?' selected':'')+'>Logística</option>'
+      +'<option value="Tecnologia"'+(u.setor==='Tecnologia'?' selected':'')+'>Tecnologia</option>'
+      +'<option value="Direção"'+(u.setor==='Direção'?' selected':'')+'>Direção</option>'
+      +'</select></div></div>'
+      +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">'
+      +'<input type="checkbox" class="gest-master-chk"'+(u.master?' checked':'')+' style="width:auto">'
+      +'<span style="font-size:13px;color:var(--white)">Perfil Master</span>'
+      +'</div>'
+      +'<div style="display:flex;gap:8px">'
+      +'<button class="btn btn-sm btn-primary sv-gest-btn" style="width:auto;padding:8px 16px">Salvar</button>'
+      +'<button class="btn btn-sm btn-ghost cx-gest-btn" style="padding:8px 12px">Cancelar</button>'
       +'</div></div>';
-  }).join('');
+    div.querySelector('.edit-gest-btn').addEventListener('click', function() {
+      var f = div.querySelector('.edit-gest-form');
+      f.style.display = f.style.display === 'none' ? 'block' : 'none';
+    });
+    div.querySelector('.cx-gest-btn').addEventListener('click', function() {
+      div.querySelector('.edit-gest-form').style.display = 'none';
+    });
+    (function(k, usuario, d) {
+      d.querySelector('.sv-gest-btn').addEventListener('click', async function() {
+        var nome   = d.querySelector('.gest-nome-inp').value.trim();
+        var setor  = d.querySelector('.gest-setor-sel').value;
+        var master = d.querySelector('.gest-master-chk').checked;
+        if(!nome||!setor) { showToast('Preencha nome e setor.'); return; }
+        try {
+          await fetch(WEBHOOK,{method:'POST',body:JSON.stringify({acao:'editarGestor',usuario:k,nome:nome,setor:setor,master:master})});
+          USERS[k].nome = nome; USERS[k].setor = setor; USERS[k].master = master;
+          localStorage.setItem('cellfy_users_cache', JSON.stringify(USERS));
+          showToast('Gestor '+nome+' atualizado!');
+          d.querySelector('.edit-gest-form').style.display = 'none';
+          renderEquipe();
+        } catch(e) { showToast('Erro ao salvar.'); }
+      });
+    })(key, u, div);
+    gestEl.appendChild(div);
+  });
   // Colaboradores
   var colabEl=document.getElementById('lista-colaboradores');
   if(!colaboradores.length) {
@@ -901,8 +953,8 @@ async function carregarTreinamentos() {
     var url = WEBHOOK + '?acao=getTreinamentos&gestor=' + encodeURIComponent(currentUser.nome) + '&master=' + currentUser.master;
     var resp = await fetch(url);
     var data = await resp.json();
-    if(Array.isArray(data) && data.length > 0) {
-      // Mescla com localStorage preservando confirmados e participantesEsperados locais
+    if(Array.isArray(data)) {
+      // Mescla preservando confirmados e participantesEsperados locais
       data.forEach(function(r) {
         var local = treinamentos.find(function(t){ return t.id === r.id; });
         if(local) {
