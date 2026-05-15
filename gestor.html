@@ -390,7 +390,20 @@ function showToast(msg) {
   setTimeout(function(){ t.classList.remove('show'); }, 2500);
 }
 function fmtDate(d) {
-  if(!d) return '--'; var p = d.split('-'); return p[2]+'/'+p[1]+'/'+p[0];
+  if(!d) return '--';
+  // Se for objeto Date
+  if(d instanceof Date) {
+    return d.getDate().toString().padStart(2,'0')+'/'+(d.getMonth()+1).toString().padStart(2,'0')+'/'+d.getFullYear();
+  }
+  var s = d.toString().trim();
+  // Formato ISO: 2026-05-15 ou 2026-05-15T...
+  if(s.match(/^\d{4}-\d{2}-\d{2}/)) {
+    var p = s.substring(0,10).split('-');
+    return p[2]+'/'+p[1]+'/'+p[0];
+  }
+  // Formato DD/MM/YYYY já
+  if(s.match(/^\d{2}\/\d{2}\/\d{4}/)) return s.substring(0,10);
+  return s;
 }
 function formatarMoeda(input) {
   var v = input.value.replace(/\D/g,'');
@@ -962,6 +975,12 @@ async function carregarTreinamentos() {
     var resp = await fetch(url);
     var data = await resp.json();
     if(Array.isArray(data)) {
+      // Normaliza datas que vieram do Sheets
+      data.forEach(function(r) {
+        if(r.data && typeof r.data === 'string' && r.data.includes('T')) {
+          r.data = r.data.substring(0,10);
+        }
+      });
       // Mescla preservando confirmados e participantesEsperados locais
       data.forEach(function(r) {
         var local = treinamentos.find(function(t){ return t.id === r.id; });
