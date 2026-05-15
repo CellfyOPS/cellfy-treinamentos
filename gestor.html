@@ -447,10 +447,10 @@ function iniciarApp() {
   document.getElementById('f-gestor').value = u.nome;
   document.getElementById('f-setor').value = u.setor;
   document.getElementById('f-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('nav-pendencias').style.display='block';
   if(u.master) {
     document.getElementById('filter-row-hist').style.display='flex';
     document.getElementById('nav-equipe').style.display='block';
-    document.getElementById('nav-pendencias').style.display='block';
     var sel = document.getElementById('filtro-gestor-hist');
     Object.values(USERS).forEach(function(uu) {
       var opt = document.createElement('option');
@@ -895,7 +895,8 @@ async function carregarTreinamentos() {
 
 async function carregarPendencias() {
   try {
-    var resp = await fetch(WEBHOOK + '?acao=getPendencias');
+    var url = WEBHOOK + '?acao=getPendencias&gestor=' + encodeURIComponent(currentUser.nome) + '&master=' + currentUser.master;
+    var resp = await fetch(url);
     var data = await resp.json();
     if(Array.isArray(data)) {
       pendencias = data;
@@ -906,7 +907,11 @@ async function carregarPendencias() {
 
 function renderPendencias() {
   var el = document.getElementById('lista-pendencias');
-  var lista = pendencias.filter(function(p){ return p.status === 'Pendente'; });
+  var lista = pendencias.filter(function(p){
+    if(p.status !== 'Pendente') return false;
+    if(currentUser.master) return true;
+    return p.gestor === currentUser.nome || p.setor === currentUser.setor;
+  });
   if(!lista.length) {
     el.innerHTML = '<div class="empty">// nenhuma pendência no momento ✓</div>';
     return;
