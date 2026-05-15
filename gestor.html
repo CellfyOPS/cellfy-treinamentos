@@ -232,19 +232,6 @@ main{max-width:900px;margin:0 auto;padding:32px 24px 80px}
         <div><h1>Painel</h1><p>// visão consolidada de capacitação</p></div>
         <button class="btn btn-sm btn-ghost" id="btn-refresh-painel">↻ Atualizar</button>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-        <div class="fg" style="flex:1;min-width:140px;margin-bottom:0">
-          <label>De</label>
-          <input type="date" id="painel-data-de" style="margin-bottom:0">
-        </div>
-        <div class="fg" style="flex:1;min-width:140px;margin-bottom:0">
-          <label>Até</label>
-          <input type="date" id="painel-data-ate" style="margin-bottom:0">
-        </div>
-        <div style="display:flex;align-items:flex-end">
-          <button class="btn btn-sm btn-ghost" id="btn-filtrar-painel" style="height:44px">Filtrar</button>
-        </div>
-      </div>
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:flex-end">
         <div class="fg" style="flex:1;min-width:130px;margin-bottom:0"><label>De</label><input type="date" id="painel-data-de" style="margin-bottom:0"></div>
         <div class="fg" style="flex:1;min-width:130px;margin-bottom:0"><label>Até</label><input type="date" id="painel-data-ate" style="margin-bottom:0"></div>
@@ -260,15 +247,6 @@ main{max-width:900px;margin:0 auto;padding:32px 24px 80px}
     <div class="view" id="view-pendencias">
       <div class="section-head">
         <div><h1>Pendências</h1><p>// colaboradores que perderam treinamentos</p></div>
-        <button class="btn btn-sm btn-ghost" id="btn-refresh-pend">↻ Atualizar</button>
-      </div>
-      <div id="lista-pendencias"></div>
-    </div>
-
-    <!-- PENDÊNCIAS -->
-    <div class="view" id="view-pendencias">
-      <div class="section-head">
-        <div><h1>Pendências</h1><p>// treinamentos perdidos por afastamento ou férias</p></div>
         <button class="btn btn-sm btn-ghost" id="btn-refresh-pend">↻ Atualizar</button>
       </div>
       <div id="lista-pendencias"></div>
@@ -452,6 +430,8 @@ async function doLogin() {
   currentUser = Object.assign({key:user}, u);
   resetTimer();
   await carregarColaboradores();
+  await carregarPendencias();
+  await carregarTreinamentos();
   iniciarApp();
 }
 
@@ -882,6 +862,28 @@ async function trocarSenha() {
 }
 
 // ===== INIT =====
+async function carregarTreinamentos() {
+  try {
+    var url = WEBHOOK + '?acao=getTreinamentos&gestor=' + encodeURIComponent(currentUser.nome) + '&master=' + currentUser.master;
+    var resp = await fetch(url);
+    var data = await resp.json();
+    if(Array.isArray(data) && data.length > 0) {
+      // Mescla com localStorage preservando confirmados e participantesEsperados locais
+      data.forEach(function(r) {
+        var local = treinamentos.find(function(t){ return t.id === r.id; });
+        if(local) {
+          r.confirmados = local.confirmados || [];
+          r.participantesEsperados = local.participantesEsperados || [];
+          r.materiais = local.materiais || [];
+          r.gestorKey = local.gestorKey || '';
+        }
+      });
+      treinamentos = data;
+      salvar();
+    }
+  } catch(e) {}
+}
+
 async function carregarPendencias() {
   try {
     var resp = await fetch(WEBHOOK + '?acao=getPendencias');
