@@ -723,8 +723,16 @@ function renderHistorico() {
           var cls=ok?'confirmed':(ferias?'ferias':'pending');
           var status=ok?'✓ Confirmado':(ferias?'🏖 Férias':'⏳ Pendente');
           return '<div class="part-item '+cls+'"><span class="part-name">'+n+'</span><span class="part-status">'+status+'</span></div>';
-        }).join('')+'</div>';
+        }).join('');
+      // Mostra também confirmados que não estavam na lista esperada
+      (r.confirmados||[]).forEach(function(c) {
+        var nomeC=(c.nomeOriginal||c.nome||'').trim().toLowerCase();
+        var jaListado=r.participantesEsperados.some(function(n){return n.trim().toLowerCase()===nomeC;});
+        if(!jaListado) partHTML+='<div class="part-item confirmed"><span class="part-name">'+(c.nomeOriginal||c.nome)+'<span style="font-size:10px;opacity:.5"> (extra)</span></span><span class="part-status">✓ Confirmado</span></div>';
+      });
+      partHTML+='</div>';
     } else if(conf>0) {
+      // Sem lista de esperados — mostra só quem confirmou
       partHTML='<div class="part-list">'+(r.confirmados||[]).map(function(c) {
         return '<div class="part-item confirmed"><span class="part-name">'+(c.nomeOriginal||c.nome)+'</span><span class="part-status">✓ Confirmado</span></div>';
       }).join('')+'</div>';
