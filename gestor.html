@@ -504,14 +504,16 @@ function carregarColabLista() {
   var el = document.getElementById('colab-lista');
   if(!lista.length) { el.style.display='none'; return; }
   el.style.display='block';
-  el.innerHTML = lista.map(function(c) {
+  el.innerHTML = '';
+  lista.forEach(function(c) {
     var statusClass = c.status==='Férias'?'ferias':(c.status==='Afastado'?'afastado':'ativo');
-    var selected = participantesTmp.indexOf(c.nome)>=0 ? 'selected' : '';
-    return '<div class="colab-item '+selected+'" onclick="toggleColab(this,''+c.nome+'')">'
-      +'<span>'+c.nome+'</span>'
-      +'<span class="colab-status-'+statusClass+'">'+c.status+'</span>'
-      +'</div>';
-  }).join('');
+    var isSelected = participantesTmp.indexOf(c.nome)>=0;
+    var div = document.createElement('div');
+    div.className = 'colab-item' + (isSelected ? ' selected' : '');
+    div.innerHTML = '<span>'+c.nome+'</span><span class="colab-status-'+statusClass+'">'+c.status+'</span>';
+    (function(nome, divEl) { divEl.addEventListener('click', function(){ toggleColab(divEl, nome); }); })(c.nome, div);
+    el.appendChild(div);
+  });
 }
 function toggleColab(el, nome) {
   var idx = participantesTmp.indexOf(nome);
