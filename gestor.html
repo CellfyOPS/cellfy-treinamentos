@@ -698,7 +698,9 @@ function renderHistorico() {
   var fG=(document.getElementById('filtro-gestor-hist')||{}).value||'';
   var fS=(document.getElementById('filtro-setor-hist')||{}).value||'';
   var lista=treinamentos.slice();
-  if(!currentUser.master) lista=lista.filter(function(r){return r.gestorKey===currentUser.key;});
+  if(!currentUser.master) lista=lista.filter(function(r){
+    return r.gestorKey===currentUser.key || r.gestor===currentUser.nome;
+  });
   if(fG) lista=lista.filter(function(r){return r.gestor===fG;});
   if(fS) lista=lista.filter(function(r){return r.setor===fS;});
   var el=document.getElementById('lista-cards');
@@ -785,7 +787,7 @@ function renderPainel() {
   var dataAteEl = document.getElementById('painel-data-ate');
   var dataDe = dataDeEl ? dataDeEl.value : '';
   var dataAte = dataAteEl ? dataAteEl.value : '';
-  var lista = (currentUser.master?treinamentos:treinamentos.filter(function(r){return r.gestorKey===currentUser.key;}))
+  var lista = (currentUser.master?treinamentos:treinamentos.filter(function(r){return r.gestorKey===currentUser.key||r.gestor===currentUser.nome;}))
     .filter(function(r){
       if(dataDe && r.data < dataDe) return false;
       if(dataAte && r.data > dataAte) return false;
@@ -984,8 +986,11 @@ async function trocarSenha() {
 
 // ===== INIT =====
 async function carregarTreinamentos() {
+  if(!currentUser) return;
   try {
-    var url = WEBHOOK + '?acao=getTreinamentos&gestor=' + encodeURIComponent(currentUser.nome) + '&master=' + currentUser.master;
+    var nomeGestor = currentUser.nome || '';
+    var isMaster = currentUser.master || false;
+    var url = WEBHOOK + '?acao=getTreinamentos&gestor=' + encodeURIComponent(nomeGestor) + '&master=' + isMaster;
     var resp = await fetch(url);
     var data = await resp.json();
     if(Array.isArray(data)) {
