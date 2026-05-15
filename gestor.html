@@ -853,13 +853,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.addEventListener(evt, resetTimer, {passive:true});
   });
 
-  // Auto-login
+  // Auto-login silencioso
   await carregarUsuarios();
   var sessao=localStorage.getItem('cellfy_session');
   if(sessao && USERS[sessao] && checkSessionExpiry()) {
-    document.getElementById('login-user').value=sessao;
-    document.getElementById('login-pass').value=USERS[sessao].senha;
-    await doLogin();
+    // Login direto sem preencher campos visualmente
+    var u = USERS[sessao];
+    currentUser = Object.assign({key:sessao}, u);
+    localStorage.setItem('cellfy_session_time', Date.now());
+    resetTimer();
+    await carregarColaboradores();
+    iniciarApp();
   } else if(sessao) {
     localStorage.removeItem('cellfy_session');
     localStorage.removeItem('cellfy_session_time');
