@@ -626,7 +626,12 @@ async function salvarTreinamento() {
     titulo:titulo,tipo:tipo,modalidade:mod,data:data,carga:carga,custo:custoFmt,
     validade:validade,obs:obs,materiais:materiaisTmp.slice(),
     participantesEsperados:participantesTmp.slice(),confirmados:[],criadoEm:new Date().toISOString()};
-  treinamentos.unshift(reg); // adicionado localmente, planilha é a fonte verdadeira
+  treinamentos.unshift(reg);
+  // Salva cache local para preservar participantes e materiais
+  var cache = JSON.parse(localStorage.getItem('cellfy_tr_cache') || '[]');
+  cache = cache.filter(function(t){ return t.id !== reg.id; });
+  cache.unshift(reg);
+  localStorage.setItem('cellfy_tr_cache', JSON.stringify(cache));
   // Envia para planilha e aguarda confirmação
   try {
     await fetch(WEBHOOK,{method:'POST',body:JSON.stringify(Object.assign({acao:'novoTreinamento'},reg))});
@@ -1002,26 +1007,33 @@ async function carregarTreinamentos() {
     var resp = await fetch(url);
     var data = await resp.json();
     if(Array.isArray(data)) {
-      // Normaliza datas
+      // Busca cache local para preservar participantes e materiais
+      var localCache = JSON.parse(localStorage.getItem('cellfy_tr_cache') || '[]');
       data.forEach(function(r) {
+        // Normaliza data
         if(r.data && typeof r.data === 'string' && r.data.includes('T')) {
           r.data = r.data.substring(0,10);
         }
-        // Define gestorKey baseado no nome do gestor
+        // Define gestorKey
         if(!r.gestorKey) {
           var found = Object.entries(USERS).find(function(e){ return e[1].nome === r.gestor; });
           r.gestorKey = found ? found[0] : '';
         }
-        // Preserva confirmados e participantes do localStorage se existir
-        var local = treinamentos.find(function(t){ return t.id === r.id; });
+        // Mescla com cache local — preserva participantes e materiais
+        var local = localCache.find(function(t){ return t.id === r.id; });
         if(local) {
-          r.confirmados = local.confirmados || [];
-          r.participantesEsperados = local.participantesEsperados || [];
-          r.materiais = local.materiais || [];
+          if(!r.participantesEsperados || r.participantesEsperados.length === 0) {
+            r.participantesEsperados = local.participantesEsperados || [];
+          }
+          if(!r.materiais || r.materiais.length === 0) {
+            r.materiais = local.materiais || [];
+          }
         }
+        r.confirmados = r.confirmados || [];
       });
-      // SUBSTITUI completamente com dados frescos da planilha
       treinamentos = data;
+      // Atualiza cache local
+      localStorage.setItem('cellfy_tr_cache', JSON.stringify(data));
     }
   } catch(e) {}
 }
