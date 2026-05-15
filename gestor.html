@@ -135,6 +135,8 @@ main{max-width:900px;margin:0 auto;padding:32px 24px 80px}
     <button class="nav-btn active" id="nav-novo">+ Novo</button>
     <button class="nav-btn" id="nav-historico">Histórico</button>
     <button class="nav-btn" id="nav-painel">Painel</button>
+    <button class="nav-btn" id="nav-pendencias" style="display:none">Pendências</button>
+    <button class="nav-btn" id="nav-pendencias" style="display:none">Pendências</button>
     <button class="nav-btn" id="nav-equipe" style="display:none">Equipe</button>
     <button class="nav-btn" id="nav-conta">Minha conta</button>
   </div>
@@ -230,9 +232,46 @@ main{max-width:900px;margin:0 auto;padding:32px 24px 80px}
         <div><h1>Painel</h1><p>// visão consolidada de capacitação</p></div>
         <button class="btn btn-sm btn-ghost" id="btn-refresh-painel">↻ Atualizar</button>
       </div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <div class="fg" style="flex:1;min-width:140px;margin-bottom:0">
+          <label>De</label>
+          <input type="date" id="painel-data-de" style="margin-bottom:0">
+        </div>
+        <div class="fg" style="flex:1;min-width:140px;margin-bottom:0">
+          <label>Até</label>
+          <input type="date" id="painel-data-ate" style="margin-bottom:0">
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          <button class="btn btn-sm btn-ghost" id="btn-filtrar-painel" style="height:44px">Filtrar</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:flex-end">
+        <div class="fg" style="flex:1;min-width:130px;margin-bottom:0"><label>De</label><input type="date" id="painel-data-de" style="margin-bottom:0"></div>
+        <div class="fg" style="flex:1;min-width:130px;margin-bottom:0"><label>Até</label><input type="date" id="painel-data-ate" style="margin-bottom:0"></div>
+        <button class="btn btn-sm btn-ghost" id="btn-filtrar-painel" style="height:43px;margin-bottom:0">Filtrar</button>
+        <button class="btn btn-sm btn-ghost" id="btn-limpar-filtro-painel" style="height:43px;margin-bottom:0">Limpar</button>
+      </div>
       <div id="alertas-pendentes" style="margin-bottom:20px"></div>
       <div class="stats-grid" id="stats-grid"></div>
       <div class="grid2" id="painel-content"></div>
+    </div>
+
+    <!-- PENDÊNCIAS -->
+    <div class="view" id="view-pendencias">
+      <div class="section-head">
+        <div><h1>Pendências</h1><p>// colaboradores que perderam treinamentos</p></div>
+        <button class="btn btn-sm btn-ghost" id="btn-refresh-pend">↻ Atualizar</button>
+      </div>
+      <div id="lista-pendencias"></div>
+    </div>
+
+    <!-- PENDÊNCIAS -->
+    <div class="view" id="view-pendencias">
+      <div class="section-head">
+        <div><h1>Pendências</h1><p>// treinamentos perdidos por afastamento ou férias</p></div>
+        <button class="btn btn-sm btn-ghost" id="btn-refresh-pend">↻ Atualizar</button>
+      </div>
+      <div id="lista-pendencias"></div>
     </div>
 
     <!-- EQUIPE (master) -->
@@ -319,6 +358,7 @@ let USERS = {};
 let colaboradores = [];
 let currentUser = null;
 let treinamentos = JSON.parse(localStorage.getItem('cellfy_treinamentos') || '[]');
+let pendencias = JSON.parse(localStorage.getItem('cellfy_pendencias') || '[]');
 let participantesTmp = [];
 let materiaisTmp = [];
 let linkAtual = '';
@@ -432,6 +472,7 @@ function iniciarApp() {
   if(u.master) {
     document.getElementById('filter-row-hist').style.display='flex';
     document.getElementById('nav-equipe').style.display='block';
+    document.getElementById('nav-pendencias').style.display='block';
     var sel = document.getElementById('filtro-gestor-hist');
     Object.values(USERS).forEach(function(uu) {
       var opt = document.createElement('option');
@@ -461,6 +502,7 @@ function switchView(v) {
   if(v==='historico') renderHistorico();
   if(v==='painel') renderPainel();
   if(v==='equipe') renderEquipe();
+  if(v==='pendencias') renderPendencias();
 }
 
 // ===== PARTICIPANTES =====
@@ -562,6 +604,21 @@ async function salvarTreinamento() {
   ['f-titulo','f-carga','f-custo','f-validade','f-obs'].forEach(function(x){document.getElementById(x).value='';});
   ['f-tipo','f-modalidade'].forEach(function(x){document.getElementById(x).value='';});
   document.getElementById('f-data').value=new Date().toISOString().split('T')[0];
+  // Gera pendências para colaboradores de férias/afastados
+  participantesTmp.forEach(function(nome) {
+    var colab = colaboradores.find(function(c){ return c.nome === nome; });
+    if(colab && (colab.status === 'Férias' || colab.status === 'Afastado')) {
+      var pend = {
+        id: 'pend_'+Date.now()+'_'+Math.random().toString(36).substr(2,5),
+        colaborador: nome, treinamento: titulo, treinamentoId: id,
+        gestor: gestor, setor: setor, dataTreinamento: data,
+        status: 'Pendente', motivo: '', criadoEm: new Date().toISOString()
+      };
+      pendencias.push(pend);
+      localStorage.setItem('cellfy_pendencias', JSON.stringify(pendencias));
+      fetch(WEBHOOK,{method:'POST',body:JSON.stringify(Object.assign({acao:'salvarPendencia'},pend))}).catch(function(){});
+    }
+  });
   participantesTmp=[]; materiaisTmp=[]; renderTags(); renderMateriais();
   document.getElementById('colab-lista').style.display='none';
 }
@@ -679,7 +736,16 @@ function exportarCSV(id) {
 
 // ===== PAINEL =====
 function renderPainel() {
-  var lista=currentUser.master?treinamentos:treinamentos.filter(function(r){return r.gestorKey===currentUser.key;});
+  var dataDeEl = document.getElementById('painel-data-de');
+  var dataAteEl = document.getElementById('painel-data-ate');
+  var dataDe = dataDeEl ? dataDeEl.value : '';
+  var dataAte = dataAteEl ? dataAteEl.value : '';
+  var lista = (currentUser.master?treinamentos:treinamentos.filter(function(r){return r.gestorKey===currentUser.key;}))
+    .filter(function(r){
+      if(dataDe && r.data < dataDe) return false;
+      if(dataAte && r.data > dataAte) return false;
+      return true;
+    });
   var total=lista.length;
   var totalC=lista.reduce(function(a,r){return a+((r.confirmados||[]).length);},0);
   var setores=Object.keys(lista.reduce(function(a,r){a[r.setor]=1;return a;},{})).length;
@@ -751,13 +817,52 @@ function renderEquipe() {
     colabEl.innerHTML='<div class="empty" style="padding:20px 0">// nenhum colaborador cadastrado</div>';
     return;
   }
-  colabEl.innerHTML=colaboradores.map(function(c) {
-    var statusClass=c.status==='Férias'?'badge-warn':(c.status==='Afastado'||c.status==='Desligado'?'badge-red':'badge-green');
-    return '<div class="card" style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;align-items:center">'
-      +'<div><div style="font-size:13px;font-weight:500">'+c.nome+'</div><div style="font-size:11px;color:var(--muted);font-family:\"DM Mono\",monospace">'+c.setor+(c.email?' · '+c.email:'')+'</div></div>'
+  colabEl.innerHTML = '';
+  colaboradores.forEach(function(c) {
+    var statusClass = c.status==='Férias'?'badge-warn':(c.status==='Afastado'||c.status==='Desligado'?'badge-red':'badge-green');
+    var div = document.createElement('div');
+    div.className = 'card';
+    div.style.marginBottom = '6px';
+    div.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center">'
+      +'<div><div style="font-size:13px;font-weight:500">'+c.nome+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);font-family:DM Mono,monospace">'+c.setor+(c.email?' · '+c.email:'')+'</div></div>'
+      +'<div style="display:flex;gap:8px;align-items:center">'
       +'<span class="badge '+statusClass+'">'+c.status+'</span>'
+      +'<button class="btn btn-sm btn-ghost edit-st-btn" style="font-size:11px;padding:4px 10px">Editar</button>'
+      +'</div></div>'
+      +'<div class="edit-st-form" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">'
+      +'<div style="display:flex;gap:8px;align-items:center">'
+      +'<select class="st-select" style="flex:1;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--white);outline:none">'
+      +'<option value="Ativo"'+(c.status==='Ativo'?' selected':'')+'>Ativo</option>'
+      +'<option value="Férias"'+(c.status==='Férias'?' selected':'')+'>Férias</option>'
+      +'<option value="Afastado"'+(c.status==='Afastado'?' selected':'')+'>Afastado</option>'
+      +'<option value="Desligado"'+(c.status==='Desligado'?' selected':'')+'>Desligado</option>'
+      +'</select>'
+      +'<button class="btn btn-sm btn-primary sv-st-btn" style="width:auto;padding:8px 14px">Salvar</button>'
+      +'<button class="btn btn-sm btn-ghost cx-st-btn" style="padding:8px 10px">Cancelar</button>'
       +'</div></div>';
-  }).join('');
+    div.querySelector('.edit-st-btn').addEventListener('click', function() {
+      var f = div.querySelector('.edit-st-form');
+      f.style.display = f.style.display === 'none' ? 'block' : 'none';
+    });
+    div.querySelector('.cx-st-btn').addEventListener('click', function() {
+      div.querySelector('.edit-st-form').style.display = 'none';
+    });
+    (function(colab, d) {
+      d.querySelector('.sv-st-btn').addEventListener('click', async function() {
+        var ns = d.querySelector('.st-select').value;
+        try {
+          await fetch(WEBHOOK, {method:'POST', body:JSON.stringify({acao:'atualizarStatusColab', nome:colab.nome, status:ns})});
+          colab.status = ns;
+          localStorage.setItem('cellfy_colab_cache', JSON.stringify(colaboradores));
+          showToast('Status de '+colab.nome+' atualizado para '+ns+'!');
+          d.querySelector('.edit-st-form').style.display = 'none';
+          renderEquipe();
+        } catch(e) { showToast('Erro ao salvar.'); }
+      });
+    })(c, div);
+    colabEl.appendChild(div);
+  });
 }
 
 // ===== CONTA =====
@@ -781,6 +886,79 @@ async function trocarSenha() {
 }
 
 // ===== INIT =====
+async function carregarPendencias() {
+  try {
+    var resp = await fetch(WEBHOOK + '?acao=getPendencias');
+    var data = await resp.json();
+    if(Array.isArray(data)) {
+      pendencias = data;
+      localStorage.setItem('cellfy_pendencias', JSON.stringify(data));
+    }
+  } catch(e) {}
+}
+
+function renderPendencias() {
+  var el = document.getElementById('lista-pendencias');
+  var lista = pendencias.filter(function(p){ return p.status === 'Pendente'; });
+  if(!lista.length) {
+    el.innerHTML = '<div class="empty">// nenhuma pendência no momento ✓</div>';
+    return;
+  }
+  el.innerHTML = '';
+  lista.forEach(function(p) {
+    var div = document.createElement('div');
+    div.className = 'card';
+    div.innerHTML = '<div class="card-top">'
+      +'<div><div class="card-title">'+p.colaborador+'</div>'
+      +'<div class="card-meta">Perdeu: <strong style="color:var(--white)">'+p.treinamento+'</strong> · '+fmtDate(p.dataTreinamento)+'</div>'
+      +'<div class="card-meta" style="margin-top:2px">Gestor: '+p.gestor+' · '+p.setor+'</div></div>'
+      +'<span class="badge badge-warn">Pendente</span></div>'
+      +'<div class="card-actions" style="margin-top:12px">'
+      +'<button class="btn btn-sm btn-ghost btn-dispensar">Dispensar</button>'
+      +'<button class="btn btn-sm btn-danger btn-excluir-pend">Excluir</button>'
+      +'</div>'
+      +'<div class="motivo-form" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">'
+      +'<div class="fg" style="margin-bottom:8px"><label>Motivo (opcional)</label>'
+      +'<input type="text" class="motivo-input" placeholder="Ex: Não se aplica ao cargo atual"></div>'
+      +'<button class="btn btn-sm btn-primary confirmar-acao-btn" style="width:auto;padding:8px 16px">Confirmar</button>'
+      +'</div>';
+
+    var acaoAtual = '';
+    div.querySelector('.btn-dispensar').addEventListener('click', function() {
+      acaoAtual = 'Dispensado';
+      div.querySelector('.motivo-form').style.display = 'block';
+    });
+    div.querySelector('.btn-excluir-pend').addEventListener('click', async function() {
+      if(!confirm('Excluir esta pendência?')) return;
+      await resolverPendenciaLocal(p, 'Excluído', '');
+    });
+    div.querySelector('.confirmar-acao-btn').addEventListener('click', async function() {
+      var motivo = div.querySelector('.motivo-input').value.trim();
+      await resolverPendenciaLocal(p, acaoAtual, motivo);
+    });
+
+    el.appendChild(div);
+  });
+}
+
+async function resolverPendenciaLocal(p, acao, motivo) {
+  try {
+    await fetch(WEBHOOK, {method:'POST', body:JSON.stringify({
+      acao:'resolverPendencia', colaborador:p.colaborador,
+      treinamentoId:p.treinamentoId, acao:acao, motivo:motivo
+    })});
+  } catch(e) {}
+  var idx = pendencias.findIndex(function(x){ return x.id === p.id; });
+  if(idx !== -1) {
+    pendencias[idx].status = acao;
+    pendencias[idx].motivo = motivo;
+    pendencias[idx].resolvidoEm = new Date().toISOString();
+    localStorage.setItem('cellfy_pendencias', JSON.stringify(pendencias));
+  }
+  showToast('Pendência resolvida!');
+  renderPendencias();
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
   document.getElementById('btn-entrar').addEventListener('click', doLogin);
   document.getElementById('login-pass').addEventListener('keydown', function(e){if(e.key==='Enter') doLogin();});
@@ -789,6 +967,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   document.getElementById('nav-historico').addEventListener('click', function(){switchView('historico');});
   document.getElementById('nav-painel').addEventListener('click', function(){switchView('painel');});
   document.getElementById('nav-equipe').addEventListener('click', function(){switchView('equipe');});
+  document.getElementById('nav-pendencias').addEventListener('click', function(){switchView('pendencias');});
   document.getElementById('nav-conta').addEventListener('click', function(){switchView('conta');});
   document.getElementById('btn-gerar').addEventListener('click', salvarTreinamento);
   document.getElementById('btn-add-part').addEventListener('click', function(){
@@ -813,6 +992,17 @@ document.addEventListener('DOMContentLoaded', async function() {
   document.getElementById('btn-salvar-senha').addEventListener('click', trocarSenha);
   document.getElementById('filtro-setor-hist').addEventListener('change', renderHistorico);
   document.getElementById('filtro-gestor-hist').addEventListener('change', renderHistorico);
+  document.getElementById('btn-filtrar-painel').addEventListener('click', renderPainel);
+  document.getElementById('btn-limpar-filtro-painel').addEventListener('click', function() {
+    document.getElementById('painel-data-de').value='';
+    document.getElementById('painel-data-ate').value='';
+    renderPainel();
+  });
+  document.getElementById('btn-refresh-pend').addEventListener('click', async function() {
+    var btn=this; btn.textContent='↻ Buscando...'; btn.disabled=true;
+    await carregarPendencias(); renderPendencias();
+    btn.textContent='↻ Atualizar'; btn.disabled=false; showToast('Pendências atualizadas!');
+  });
   document.getElementById('btn-refresh-hist').addEventListener('click', async function(){
     var btn=this; btn.textContent='↻ Buscando...'; btn.disabled=true;
     await sincronizarConfirmados(); renderHistorico();
@@ -863,6 +1053,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     localStorage.setItem('cellfy_session_time', Date.now());
     resetTimer();
     await carregarColaboradores();
+    await carregarPendencias();
     iniciarApp();
   } else if(sessao) {
     localStorage.removeItem('cellfy_session');
