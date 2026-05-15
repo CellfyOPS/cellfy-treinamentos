@@ -450,8 +450,6 @@ async function doLogin() {
     document.getElementById('login-err').style.display='block'; return;
   }
   currentUser = Object.assign({key:user}, u);
-  localStorage.setItem('cellfy_session', user);
-  localStorage.setItem('cellfy_session_time', Date.now());
   resetTimer();
   await carregarColaboradores();
   iniciarApp();
@@ -483,8 +481,6 @@ function iniciarApp() {
 
 function doLogout() {
   currentUser=null;
-  localStorage.removeItem('cellfy_session');
-  localStorage.removeItem('cellfy_session_time');
   clearTimeout(inactivityTimer);
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('app-screen').style.display='none';
@@ -1043,22 +1039,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.addEventListener(evt, resetTimer, {passive:true});
   });
 
-  // Auto-login silencioso
+  // Carrega usuários para o login
   await carregarUsuarios();
-  var sessao=localStorage.getItem('cellfy_session');
-  if(sessao && USERS[sessao] && checkSessionExpiry()) {
-    // Login direto sem preencher campos visualmente
-    var u = USERS[sessao];
-    currentUser = Object.assign({key:sessao}, u);
-    localStorage.setItem('cellfy_session_time', Date.now());
-    resetTimer();
-    await carregarColaboradores();
-    await carregarPendencias();
-    iniciarApp();
-  } else if(sessao) {
-    localStorage.removeItem('cellfy_session');
-    localStorage.removeItem('cellfy_session_time');
-  }
+  // Limpa qualquer sessão anterior
+  localStorage.removeItem('cellfy_session');
+  localStorage.removeItem('cellfy_session_time');
   document.getElementById('f-data').value=new Date().toISOString().split('T')[0];
 });
 </script>
