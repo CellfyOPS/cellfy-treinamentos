@@ -257,7 +257,10 @@ main{max-width:900px;margin:0 auto;padding:32px 24px 80px}
       <div class="section-head"><div><h1>Equipe</h1><p>// gestores e colaboradores</p></div></div>
       <div class="grid2">
         <div>
-          <div style="font-size:13px;font-weight:600;margin-bottom:12px;color:var(--white)">Gestores</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-size:13px;font-weight:600;color:var(--white)">Gestores</div>
+            <button class="btn btn-sm btn-ghost" id="btn-novo-gestor" style="font-size:11px">+ Novo gestor</button>
+          </div>
           <div id="lista-gestores"></div>
         </div>
         <div>
@@ -296,6 +299,31 @@ main{max-width:900px;margin:0 auto;padding:32px 24px 80px}
       <button class="btn-modal" id="btn-copiar">Copiar link</button>
       <button class="btn-modal" id="btn-fechar-modal">Fechar</button>
       <button class="btn-modal primary" id="btn-ver-hist">Ver histórico →</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOVO GESTOR -->
+<div class="modal-overlay" id="modal-gestor">
+  <div class="modal" style="text-align:left">
+    <h2>Novo gestor</h2>
+    <div class="fg"><label>Usuário (login)</label><input id="gestor-usuario" placeholder="ex: joao"></div>
+    <div class="fg"><label>Nome completo</label><input id="gestor-nome" placeholder="ex: João Silva"></div>
+    <div class="fg"><label>Setor</label>
+      <select id="gestor-setor"><option value="">Selecione...</option>
+        <option>Customer OPS</option><option>Marketing</option><option>RMA</option>
+        <option>RH</option><option>Comercial</option><option>Logística</option>
+        <option>Tecnologia</option><option>Direção</option>
+      </select>
+    </div>
+    <div class="fg"><label>Senha inicial</label><input id="gestor-senha" type="password" placeholder="Mínimo 6 caracteres"></div>
+    <div class="fg" style="flex-direction:row;align-items:center;gap:10px">
+      <input type="checkbox" id="gestor-master" style="width:auto;margin-bottom:0">
+      <label style="text-transform:none;font-size:13px;color:var(--white);letter-spacing:0">Perfil Master</label>
+    </div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn-modal" id="btn-cancelar-gestor">Cancelar</button>
+      <button class="btn-modal primary" id="btn-salvar-gestor">Salvar</button>
     </div>
   </div>
 </div>
@@ -1023,6 +1051,34 @@ document.addEventListener('DOMContentLoaded', async function() {
     var btn=this; btn.textContent='↻ Buscando...'; btn.disabled=true;
     await sincronizarConfirmados(); renderPainel();
     btn.textContent='↻ Atualizar'; btn.disabled=false; showToast('Atualizado!');
+  });
+  document.getElementById('btn-novo-gestor').addEventListener('click', function(){
+    document.getElementById('modal-gestor').classList.add('open');
+  });
+  document.getElementById('btn-cancelar-gestor').addEventListener('click', function(){
+    document.getElementById('modal-gestor').classList.remove('open');
+  });
+  document.getElementById('btn-salvar-gestor').addEventListener('click', async function(){
+    var usuario = document.getElementById('gestor-usuario').value.trim().toLowerCase();
+    var nome    = document.getElementById('gestor-nome').value.trim();
+    var setor   = document.getElementById('gestor-setor').value;
+    var senha   = document.getElementById('gestor-senha').value;
+    var master  = document.getElementById('gestor-master').checked;
+    if(!usuario||!nome||!setor||senha.length<6){ showToast('Preencha todos os campos. Senha mínimo 6 caracteres.'); return; }
+    if(USERS[usuario]){ showToast('Usuário já existe!'); return; }
+    try {
+      await fetch(WEBHOOK,{method:'POST',body:JSON.stringify({
+        acao:'novoGestor', usuario:usuario, nome:nome, setor:setor, senha:senha, master:master
+      })});
+      USERS[usuario] = {nome:nome, setor:setor, senha:senha, master:master};
+      localStorage.setItem('cellfy_users_cache', JSON.stringify(USERS));
+      document.getElementById('modal-gestor').classList.remove('open');
+      ['gestor-usuario','gestor-nome','gestor-senha'].forEach(function(x){document.getElementById(x).value='';});
+      document.getElementById('gestor-setor').value='';
+      document.getElementById('gestor-master').checked=false;
+      showToast('Gestor '+nome+' criado!');
+      renderEquipe();
+    } catch(e){ showToast('Erro ao salvar.'); }
   });
   document.getElementById('btn-novo-colab').addEventListener('click', function(){
     document.getElementById('modal-colab').classList.add('open');
