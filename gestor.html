@@ -429,9 +429,8 @@ async function doLogin() {
   }
   currentUser = Object.assign({key:user}, u);
   resetTimer();
-  await carregarColaboradores();
-  await carregarPendencias();
-  await carregarTreinamentos();
+  // Carrega tudo em paralelo
+  await Promise.all([carregarColaboradores(), carregarPendencias(), carregarTreinamentos()]);
   iniciarApp();
 }
 
