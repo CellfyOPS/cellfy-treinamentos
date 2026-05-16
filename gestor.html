@@ -640,7 +640,7 @@ async function salvarTreinamento() {
     id:id,token:token,gestor:gestor,setor:setor,titulo:titulo,tipo:tipo,
     modalidade:mod,data:data,carga:carga,participantesEsperados:participantesTmp.slice()
   })));
-  var base = window.location.href.replace(/gestor\.html.*$/,'');
+  var base=window.location.href.split('/').slice(0,-1).join('/')+'/';
   var link = base+'presenca.html?d='+payload;
   document.getElementById('link-display').textContent='Encurtando...';
   document.getElementById('modal').classList.add('open');
