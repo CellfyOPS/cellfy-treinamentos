@@ -808,8 +808,11 @@ var painelFiltroAtivo = {de: '', ate: ''};
 function renderPainel() {
   var lista = (currentUser.master?treinamentos:treinamentos.filter(function(r){return r.gestorKey===currentUser.key||r.gestor===currentUser.nome;}))
     .filter(function(r){
-      if(painelFiltroAtivo.de && r.data < painelFiltroAtivo.de) return false;
-      if(painelFiltroAtivo.ate && r.data > painelFiltroAtivo.ate) return false;
+if(painelFiltroAtivo.de || painelFiltroAtivo.ate) {
+  var dataISO = r.data ? r.data.toString().trim().substring(0,10) : '';
+  if(painelFiltroAtivo.de && dataISO < painelFiltroAtivo.de) return false;
+  if(painelFiltroAtivo.ate && dataISO > painelFiltroAtivo.ate) return false;
+}
       return true;
     });
   var total=lista.length;
