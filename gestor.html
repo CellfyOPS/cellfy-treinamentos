@@ -1032,12 +1032,8 @@ async function carregarTreinamentos() {
     r.data = ds.substring(0,10);
   } else {
     try {
-      var dt2 = new Date(ds);
-      if(!isNaN(dt2.getTime())) {
-        var dd2 = String(dt2.getUTCDate()).padStart(2,'0');
-        var mm2 = String(dt2.getUTCMonth()+1).padStart(2,'0');
-        r.data = dt2.getUTCFullYear()+'-'+mm2+'-'+dd2;
-      }
+var partes = ds.substring(0,10).split('-');
+if(partes.length===3) r.data = partes[0]+'-'+partes[1]+'-'+partes[2];      }
     } catch(e) {}
   }
 }
