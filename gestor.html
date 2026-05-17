@@ -743,7 +743,7 @@ function renderHistorico() {
       }).join('')+'</div>';
     }
     var prog=esp>0?'<div class="progress-wrap"><div class="progress-label"><span>Presença</span><span>'+conf+'/'+esp+' ('+pct+'%)</span></div><div class="progress-track"><div class="progress-fill '+(isFull?'full':'')+'" style="width:'+pct+'%"></div></div></div>':'';
-    var base=window.location.href.replace(/gestor\.html.*$/,'');
+    var base=window.location.href.split('/').slice(0,-1).join('/')+'/';(/gestor\.html.*$/,'');
     var payload=btoa(encodeURIComponent(JSON.stringify({id:r.id,token:r.token,gestor:r.gestor,setor:r.setor,titulo:r.titulo,tipo:r.tipo,modalidade:r.modalidade,data:r.data,carga:r.carga,participantesEsperados:r.participantesEsperados||[]})));
     var link=base+'presenca.html?d='+payload;
     // Materiais
