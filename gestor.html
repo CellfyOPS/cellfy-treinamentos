@@ -391,18 +391,24 @@ function showToast(msg) {
 }
 function fmtDate(d) {
   if(!d) return '--';
-  // Se for objeto Date
-  if(d instanceof Date) {
-    return d.getDate().toString().padStart(2,'0')+'/'+(d.getMonth()+1).toString().padStart(2,'0')+'/'+d.getFullYear();
-  }
-  var s = d.toString().trim();
-  // Formato ISO: 2026-05-15 ou 2026-05-15T...
+  var s = (d+'').trim();
+  // Formato ISO: 2026-05-17 ou 2026-05-17T...
   if(s.match(/^\d{4}-\d{2}-\d{2}/)) {
     var p = s.substring(0,10).split('-');
     return p[2]+'/'+p[1]+'/'+p[0];
   }
   // Formato DD/MM/YYYY já
   if(s.match(/^\d{2}\/\d{2}\/\d{4}/)) return s.substring(0,10);
+  // Tenta converter via Date como último recurso
+  try {
+    var dt = new Date(s);
+    if(!isNaN(dt.getTime())) {
+      var dd = String(dt.getUTCDate()).padStart(2,'0');
+      var mm = String(dt.getUTCMonth()+1).padStart(2,'0');
+      var yyyy = dt.getUTCFullYear();
+      return dd+'/'+mm+'/'+yyyy;
+    }
+  } catch(e) {}
   return s;
 }
 function formatarMoeda(input) {
