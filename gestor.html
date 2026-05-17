@@ -83,7 +83,9 @@ main{max-width:900px;margin:0 auto;padding:32px 24px 80px}
 .modal-actions{display:flex;gap:8px}
 .btn-modal{flex:1;padding:10px;border-radius:var(--radius);font-family:"DM Mono",monospace;font-size:12px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .2s}
 .btn-modal:hover{border-color:var(--purple);color:var(--white)}.btn-modal.primary{background:var(--purple);color:#fff;border-color:var(--purple);font-weight:600}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--success);color:#fff;padding:10px 22px;border-radius:99px;font-family:"DM Mono",monospace;font-size:12px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .3s;z-index:200}
+.btn-topo{position:fixed;bottom:24px;right:24px;background:var(--purple);border:none;border-radius:99px;width:44px;height:44px;color:#fff;font-size:20px;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .3s;z-index:150;display:flex;align-items:center;justify-content:center;}
+.btn-topo.show{opacity:1;pointer-events:all;}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--success);color:#fff;padding:10px 22px;border-radius:99px;font-family:"DM Mono",monospace;font-size:12px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .3s;z-index:200}
 .toast.show{opacity:1}
 .pwd-section{margin-top:24px;padding-top:24px;border-top:1px solid var(--border)}
 .empty{text-align:center;padding:50px 0;color:var(--muted);font-family:"DM Mono",monospace;font-size:13px}
@@ -353,7 +355,7 @@ main{max-width:900px;margin:0 auto;padding:32px 24px 80px}
     </div>
   </div>
 </div>
-
+<button class="btn-topo" id="btn-topo" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1255,6 +1257,11 @@ document.addEventListener('DOMContentLoaded', async function() {
   });
 
   // Monitora inatividade
+ window.addEventListener('scroll',function(){
+  var btn=document.getElementById('btn-topo');
+  if(window.scrollY>200) btn.classList.add('show');
+  else btn.classList.remove('show');
+});
   ['mousemove','keydown','click','scroll','touchstart'].forEach(function(evt){
     document.addEventListener(evt, resetTimer, {passive:true});
   });
