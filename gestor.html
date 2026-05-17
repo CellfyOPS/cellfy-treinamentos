@@ -1026,9 +1026,21 @@ async function carregarTreinamentos() {
       var localCache = JSON.parse(localStorage.getItem('cellfy_tr_cache') || '[]');
       data.forEach(function(r) {
         // Normaliza data
-        if(r.data && typeof r.data === 'string' && r.data.includes('T')) {
-          r.data = r.data.substring(0,10);
-        }
+        if(r.data) {
+  var ds = (r.data+'').trim();
+  if(ds.match(/^\d{4}-\d{2}-\d{2}/)) {
+    r.data = ds.substring(0,10);
+  } else {
+    try {
+      var dt2 = new Date(ds);
+      if(!isNaN(dt2.getTime())) {
+        var dd2 = String(dt2.getUTCDate()).padStart(2,'0');
+        var mm2 = String(dt2.getUTCMonth()+1).padStart(2,'0');
+        r.data = dt2.getUTCFullYear()+'-'+mm2+'-'+dd2;
+      }
+    } catch(e) {}
+  }
+}
         // Define gestorKey
         if(!r.gestorKey) {
           var found = Object.entries(USERS).find(function(e){ return e[1].nome === r.gestor; });
