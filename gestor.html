@@ -608,6 +608,10 @@ function toggleColab(el, nome) {
 
 // ===== SALVAR TREINAMENTO =====
 async function salvarTreinamento() {
+  var btn = document.getElementById('btn-gerar');
+  if(btn.disabled) return;
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
   var gestor   = document.getElementById('f-gestor').value.trim();
   var setor    = document.getElementById('f-setor').value;
   var titulo   = document.getElementById('f-titulo').value.trim();
@@ -669,6 +673,8 @@ async function salvarTreinamento() {
       fetch(WEBHOOK,{method:'POST',body:JSON.stringify(Object.assign({acao:'salvarPendencia'},pend))}).catch(function(){});
     }
   });
+  btn.disabled = false;
+  btn.textContent = 'Gerar link de presença →';
   participantesTmp=[]; materiaisTmp=[]; renderTags(); renderMateriais();
   document.getElementById('colab-lista').style.display='none';
 }
