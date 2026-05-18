@@ -499,11 +499,13 @@ function iniciarApp() {
   if(u.master) {
     document.getElementById('filter-row-hist').style.display='flex';
     document.getElementById('nav-equipe').style.display='block';
-    var sel = document.getElementById('filtro-gestor-hist');
-    Object.values(USERS).forEach(function(uu) {
-      var opt = document.createElement('option');
-      opt.value=uu.nome; opt.textContent=uu.nome; sel.appendChild(opt);
-    });
+ var sel = document.getElementById('filtro-gestor-hist');
+// Limpa opções duplicadas, mantém só "Todos os gestores"
+while(sel.options.length > 1) sel.remove(1);
+Object.values(USERS).forEach(function(uu) {
+  var opt = document.createElement('option');
+  opt.value=uu.nome; opt.textContent=uu.nome; sel.appendChild(opt);
+});
   }
 }
 
