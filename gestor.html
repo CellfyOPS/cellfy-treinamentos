@@ -816,7 +816,16 @@ function renderPainel() {
   var lista = (currentUser.master?treinamentos:treinamentos.filter(function(r){return r.gestorKey===currentUser.key||r.gestor===currentUser.nome;}))
     .filter(function(r){
 if(painelFiltroAtivo.de || painelFiltroAtivo.ate) {
-  var dataISO = r.data ? r.data.toString().trim().substring(0,10) : '';
+  var dataISO = '';
+  if(r.data) {
+    var ds2 = (r.data+'').trim();
+    if(ds2.match(/^\d{4}-\d{2}-\d{2}/)) {
+      dataISO = ds2.substring(0,10);
+    } else if(ds2.match(/^\d{2}\/\d{2}\/\d{4}/)) {
+      var p2 = ds2.split('/');
+      dataISO = p2[2]+'-'+p2[1]+'-'+p2[0];
+    }
+  }
   if(painelFiltroAtivo.de && dataISO < painelFiltroAtivo.de) return false;
   if(painelFiltroAtivo.ate && dataISO > painelFiltroAtivo.ate) return false;
 }
