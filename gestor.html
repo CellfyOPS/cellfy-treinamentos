@@ -818,16 +818,7 @@ function renderPainel() {
   var lista = (currentUser.master?treinamentos:treinamentos.filter(function(r){return r.gestorKey===currentUser.key||r.gestor===currentUser.nome;}))
     .filter(function(r){
 if(painelFiltroAtivo.de || painelFiltroAtivo.ate) {
-  var dataISO = '';
-  if(r.data) {
-    var ds2 = (r.data+'').trim();
-    if(ds2.match(/^\d{4}-\d{2}-\d{2}/)) {
-      dataISO = ds2.substring(0,10);
-    } else if(ds2.match(/^\d{2}\/\d{2}\/\d{4}/)) {
-      var p2 = ds2.split('/');
-      dataISO = p2[2]+'-'+p2[1]+'-'+p2[0];
-    }
-  }
+  var dataISO = r.data ? r.data.toString().trim().substring(0,10) : '';
   if(painelFiltroAtivo.de && dataISO < painelFiltroAtivo.de) return false;
   if(painelFiltroAtivo.ate && dataISO > painelFiltroAtivo.ate) return false;
 }
@@ -1185,10 +1176,13 @@ document.addEventListener('DOMContentLoaded', async function() {
   document.getElementById('filtro-setor-hist').addEventListener('change', renderHistorico);
   document.getElementById('filtro-gestor-hist').addEventListener('change', renderHistorico);
   document.getElementById('btn-filtrar-painel').addEventListener('click', function() {
-    painelFiltroAtivo.de  = document.getElementById('painel-data-de').value;
-    painelFiltroAtivo.ate = document.getElementById('painel-data-ate').value;
-    renderPainel();
-  });
+  var de = document.getElementById('painel-data-de').value;
+  var ate = document.getElementById('painel-data-ate').value;
+  // Converte YYYY-MM-DD para DD/MM/YYYY para comparar com r.data
+  painelFiltroAtivo.de  = de  ? de.split('-').reverse().join('/') : '';
+  painelFiltroAtivo.ate = ate ? ate.split('-').reverse().join('/') : '';
+  renderPainel();
+});
   document.getElementById('btn-limpar-filtro-painel').addEventListener('click', function() {
     painelFiltroAtivo.de  = '';
     painelFiltroAtivo.ate = '';
