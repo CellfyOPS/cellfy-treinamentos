@@ -1046,13 +1046,27 @@ async function carregarTreinamentos() {
         if(r.data) {
           var ds = (r.data+'').trim();
           if(ds.match(/^\d{4}-\d{2}-\d{2}/)) {
+            // ISO: 2026-05-18
             r.data = ds.substring(0,10);
           } else if(ds.match(/^\d{2}\/\d{2}\/\d{4}/)) {
+            // DD/MM/YYYY: 18/05/2026
             var p = ds.substring(0,10).split('/');
             r.data = p[2]+'-'+p[1]+'-'+p[0];
           } else if(ds.match(/^\d{2}-\d{2}-\d{4}/)) {
+            // DD-MM-YYYY: 18-05-2026
             var p2 = ds.substring(0,10).split('-');
             r.data = p2[2]+'-'+p2[1]+'-'+p2[0];
+          } else {
+            // Formato longo JS: "Mon May 11 2026 00:00:00 GMT..."
+            try {
+              var dt = new Date(ds);
+              if(!isNaN(dt.getTime())) {
+                var yyyy = dt.getFullYear();
+                var mm = String(dt.getMonth()+1).padStart(2,'0');
+                var dd = String(dt.getDate()).padStart(2,'0');
+                r.data = yyyy+'-'+mm+'-'+dd;
+              }
+            } catch(e) {}
           }
         }
         // Define gestorKey
