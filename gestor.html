@@ -1192,9 +1192,9 @@ document.addEventListener('DOMContentLoaded', async function() {
   document.getElementById('btn-filtrar-painel').addEventListener('click', function() {
   var de = document.getElementById('painel-data-de').value;
   var ate = document.getElementById('painel-data-ate').value;
-  // Converte YYYY-MM-DD para DD/MM/YYYY para comparar com r.data
-  painelFiltroAtivo.de  = de  ? de.split('-').reverse().join('/') : '';
-  painelFiltroAtivo.ate = ate ? ate.split('-').reverse().join('/') : '';
+  // Mantém em YYYY-MM-DD para comparar com dataISO em renderPainel
+  painelFiltroAtivo.de  = de  || '';
+  painelFiltroAtivo.ate = ate || '';
   renderPainel();
 });
   document.getElementById('btn-limpar-filtro-painel').addEventListener('click', function() {
