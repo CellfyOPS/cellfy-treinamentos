@@ -1042,18 +1042,19 @@ async function carregarTreinamentos() {
       // Busca cache local para preservar participantes e materiais
       var localCache = JSON.parse(localStorage.getItem('cellfy_tr_cache') || '[]');
       data.forEach(function(r) {
-        // Normaliza data
+        // Normaliza data para YYYY-MM-DD
         if(r.data) {
-  var ds = (r.data+'').trim();
-  if(ds.match(/^\d{4}-\d{2}-\d{2}/)) {
-    r.data = ds.substring(0,10);
-} else {
-  try {
-    var partes = ds.substring(0,10).split('-');
-    if(partes.length===3) r.data = partes[0]+'-'+partes[1]+'-'+partes[2];
-  } catch(e) {}
-}
-}
+          var ds = (r.data+'').trim();
+          if(ds.match(/^\d{4}-\d{2}-\d{2}/)) {
+            r.data = ds.substring(0,10);
+          } else if(ds.match(/^\d{2}\/\d{2}\/\d{4}/)) {
+            var p = ds.substring(0,10).split('/');
+            r.data = p[2]+'-'+p[1]+'-'+p[0];
+          } else if(ds.match(/^\d{2}-\d{2}-\d{4}/)) {
+            var p2 = ds.substring(0,10).split('-');
+            r.data = p2[2]+'-'+p2[1]+'-'+p2[0];
+          }
+        }
         // Define gestorKey
         if(!r.gestorKey) {
           var found = Object.entries(USERS).find(function(e){ return e[1].nome === r.gestor; });
