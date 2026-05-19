@@ -818,21 +818,25 @@ function renderPainel() {
   var lista = (currentUser.master?treinamentos:treinamentos.filter(function(r){return r.gestorKey===currentUser.key||r.gestor===currentUser.nome;}))
     .filter(function(r){
 if(painelFiltroAtivo.de || painelFiltroAtivo.ate) {
-var dataISO = '';
 
-if (r.data) {
-  if (r.data.includes('/')) {
-    // converte DD/MM/YYYY para YYYY-MM-DD
-    var partes = r.data.split('/');
-    dataISO = partes[2] + '-' + partes[1] + '-' + partes[0];
-  } else {
-    dataISO = r.data.toString().trim().substring(0,10);
-  }
+    var dataISO = '';
+
+    if(r.data) {
+
+        dataISO = r.data.toString().trim().substring(0,10);
+
+    }
+
+    if(painelFiltroAtivo.de && dataISO < painelFiltroAtivo.de) {
+        return false;
+    }
+
+    if(painelFiltroAtivo.ate && dataISO > painelFiltroAtivo.ate) {
+        return false;
+    }
 }
-  if(painelFiltroAtivo.de && dataISO < painelFiltroAtivo.de) return false;
-  if(painelFiltroAtivo.ate && dataISO > painelFiltroAtivo.ate) return false;
-}
-      return true;
+
+return true;
     });
   var total=lista.length;
   var totalC=lista.reduce(function(a,r){return a+((r.confirmados||[]).length);},0);
