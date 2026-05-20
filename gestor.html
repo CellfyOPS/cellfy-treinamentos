@@ -898,8 +898,13 @@ return true;
       pendentes.map(function(r) {
         var esp=(r.participantesEsperados||[]).length;
         var conf=(r.confirmados||[]).length;
+        var resolvidos=(r.participantesEsperados||[]).filter(function(n){
+          var pend=pendencias.find(function(p){return p.colaborador===n&&p.treinamentoId===r.id;});
+          return pend&&(pend.status==='Dispensado'||pend.status==='Resolvido'||pend.status==='Excluído');
+        }).length;
+        var espEfetivo=esp-resolvidos;
         return '<div class="alert-card"><div class="alert-card-title">'+r.titulo+'</div>'
-          +'<div class="alert-card-sub">'+conf+'/'+esp+' confirmados · '+r.gestor+' · '+fmtDate(r.data)+'</div></div>';
+          +'<div class="alert-card-sub">'+conf+'/'+espEfetivo+' confirmados · '+r.gestor+' · '+fmtDate(r.data)+'</div></div>';
       }).join('');
   } else {
     alertasEl.innerHTML='<div style="font-size:12px;color:var(--success);font-family:\"DM Mono\",monospace;margin-bottom:16px">✓ Nenhuma pendência de confirmação</div>';
