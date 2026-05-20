@@ -537,7 +537,7 @@ function switchView(v) {
     renderPainel(); // renderiza com cache imediatamente
     var statsEl = document.getElementById('stats-grid');
     if(statsEl) statsEl.style.opacity = '0.5';
-    carregarTreinamentos().then(function() {
+    Promise.all([carregarTreinamentos(), carregarPendencias()]).then(function() {
       sincronizarConfirmados().then(function() {
         renderPainel();
         if(statsEl) statsEl.style.opacity = '1';
@@ -735,10 +735,17 @@ function renderHistorico() {
   var cards=lista.map(function(r) {
     var conf=(r.confirmados||[]).length;
     var esp=(r.participantesEsperados||[]).length;
-    var pct=esp>0?Math.round(conf/esp*100):(conf>0?100:0);
-    var isFull=esp>0&&conf>=esp;
-    var stText=conf>0?conf+' confirmado'+(conf>1?'s':''):'Aguardando';
-    var stClass=conf>0?'badge-green':'badge-warn';
+    // Desconta participantes já resolvidos (Dispensado, Resolvido, Excluído)
+    var resolvidos=(r.participantesEsperados||[]).filter(function(n){
+      var pend=pendencias.find(function(p){return p.colaborador===n&&p.treinamentoId===r.id;});
+      return pend&&(pend.status==='Dispensado'||pend.status==='Resolvido'||pend.status==='Excluído');
+    }).length;
+    var espEfetivo=esp-resolvidos;
+    var pct=espEfetivo>0?Math.round(conf/espEfetivo*100):(conf>0?100:0);
+    if(pct>100) pct=100;
+    var isFull=espEfetivo>0&&conf>=espEfetivo;
+    var stText=conf>0?conf+' confirmado'+(conf>1?'s':''):(resolvidos>=esp&&esp>0?'Resolvido':'Aguardando');
+    var stClass=(conf>0||isFull)?'badge-green':(resolvidos>=esp&&esp>0?'badge-green':'badge-warn');
     var partHTML='';
     if(esp>0) {
       var cNames=(r.confirmados||[]).map(function(c){return(c.nomeOriginal||c.nome||'').trim().toLowerCase();});
@@ -780,7 +787,7 @@ function renderHistorico() {
         return '<div class="part-item confirmed"><span class="part-name">'+(c.nomeOriginal||c.nome)+'</span><span class="part-status">✓ Confirmado</span></div>';
       }).join('')+'</div>';
     }
-    var prog=esp>0?'<div class="progress-wrap"><div class="progress-label"><span>Presença</span><span>'+conf+'/'+esp+' ('+pct+'%)</span></div><div class="progress-track"><div class="progress-fill '+(isFull?'full':'')+'" style="width:'+pct+'%"></div></div></div>':'';
+    var prog=esp>0?'<div class="progress-wrap"><div class="progress-label"><span>Presença</span><span>'+conf+'/'+espEfetivo+' ('+pct+'%)</span></div><div class="progress-track"><div class="progress-fill '+(isFull?'full':'')+'" style="width:'+pct+'%"></div></div></div>':'';
     var base=window.location.href.split('/').slice(0,-1).join('/')+'/';(/gestor\.html.*$/,'');
     var payload=btoa(encodeURIComponent(JSON.stringify({id:r.id,token:r.token,gestor:r.gestor,setor:r.setor,titulo:r.titulo,tipo:r.tipo,modalidade:r.modalidade,data:r.data,carga:r.carga,participantesEsperados:r.participantesEsperados||[]})));
     var link=base+'presenca.html?d='+payload;
@@ -879,7 +886,11 @@ return true;
   var pendentes=lista.filter(function(r){
     var esp=(r.participantesEsperados||[]).length;
     var conf=(r.confirmados||[]).length;
-    return esp>0&&conf<esp;
+    var resolvidos=(r.participantesEsperados||[]).filter(function(n){
+      var pend=pendencias.find(function(p){return p.colaborador===n&&p.treinamentoId===r.id;});
+      return pend&&(pend.status==='Dispensado'||pend.status==='Resolvido'||pend.status==='Excluído');
+    }).length;
+    return esp>0&&conf<(esp-resolvidos);
   });
   var alertasEl=document.getElementById('alertas-pendentes');
   if(pendentes.length>0) {
