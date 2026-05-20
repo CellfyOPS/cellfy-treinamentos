@@ -738,7 +738,7 @@ function renderHistorico() {
     // Desconta participantes já resolvidos (Dispensado, Resolvido, Excluído)
     var resolvidos=(r.participantesEsperados||[]).filter(function(n){
       var pend=pendencias.find(function(p){return p.colaborador===n&&p.treinamentoId===r.id;});
-      return pend&&(pend.status==='Dispensado'||pend.status==='Resolvido'||pend.status==='Excluído');
+      return pend&&(pend.status==='Dispensado'||pend.status==='Resolvido'||pend.status==='Excluído'||pend.status==='Reagendado');
     }).length;
     var espEfetivo=esp-resolvidos;
     var pct=espEfetivo>0?Math.round(conf/espEfetivo*100):(conf>0?100:0);
@@ -765,10 +765,13 @@ function renderHistorico() {
             cls='ferias'; status='🚫 Dispensado';
           } else if(pend && pend.status==='Resolvido'){
             cls='confirmed'; status='✓ Resolvido';
+          } else if(pend && pend.status==='Reagendado'){
+            var dataLabel = pend.motivo && pend.motivo.indexOf('Previsão:')>=0 ? ' · '+pend.motivo.split('·')[0].replace('Previsão:','').trim() : '';
+            cls='pending'; status='🔄 Reagendado'+dataLabel;
           } else if(colabStatus==='Férias'){
             cls='ferias'; status='🏖 Férias';
           } else if(colabStatus==='Afastado'){
-            cls='ferias'; status='🤕 Afastado';
+            cls='ferias'; status='📋 Afastado';
           } else {
             cls='pending'; status='⏳ Pendente';
           }
@@ -888,7 +891,7 @@ return true;
     var conf=(r.confirmados||[]).length;
     var resolvidos=(r.participantesEsperados||[]).filter(function(n){
       var pend=pendencias.find(function(p){return p.colaborador===n&&p.treinamentoId===r.id;});
-      return pend&&(pend.status==='Dispensado'||pend.status==='Resolvido'||pend.status==='Excluído');
+      return pend&&(pend.status==='Dispensado'||pend.status==='Resolvido'||pend.status==='Excluído'||pend.status==='Reagendado');
     }).length;
     return esp>0&&conf<(esp-resolvidos);
   });
@@ -1166,18 +1169,31 @@ function renderPendencias() {
       +'<span class="badge badge-warn">Pendente</span></div>'
       +'<div class="card-actions" style="margin-top:12px">'
       +'<button class="btn btn-sm btn-ghost btn-dispensar">Dispensar</button>'
+      +'<button class="btn btn-sm btn-ghost btn-reagendar" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.4);color:#A78BFA">🔄 Reagendar</button>'
       +'<button class="btn btn-sm btn-danger btn-excluir-pend">Excluir</button>'
       +'</div>'
       +'<div class="motivo-form" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">'
       +'<div class="fg" style="margin-bottom:8px"><label>Motivo (opcional)</label>'
       +'<input type="text" class="motivo-input" placeholder="Ex: Não se aplica ao cargo atual"></div>'
       +'<button class="btn btn-sm btn-primary confirmar-acao-btn" style="width:auto;padding:8px 16px">Confirmar</button>'
+      +'</div>'
+      +'<div class="reagendar-form" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">'
+      +'<div class="grid2" style="margin-bottom:8px">'
+      +'<div class="fg" style="margin-bottom:0"><label>Data prevista</label><input type="date" class="reagendar-data-input" style="margin-bottom:0"></div>'
+      +'<div class="fg" style="margin-bottom:0"><label>Observação (opcional)</label><input type="text" class="reagendar-obs-input" placeholder="Ex: Retorno previsto 01/06"></div>'
+      +'</div>'
+      +'<button class="btn btn-sm btn-primary confirmar-reagendar-btn" style="width:auto;padding:8px 16px">Confirmar reagendamento</button>'
       +'</div>';
 
     var acaoAtual = '';
     div.querySelector('.btn-dispensar').addEventListener('click', function() {
       acaoAtual = 'Dispensado';
       div.querySelector('.motivo-form').style.display = 'block';
+      div.querySelector('.reagendar-form').style.display = 'none';
+    });
+    div.querySelector('.btn-reagendar').addEventListener('click', function() {
+      div.querySelector('.reagendar-form').style.display = 'block';
+      div.querySelector('.motivo-form').style.display = 'none';
     });
     div.querySelector('.btn-excluir-pend').addEventListener('click', async function() {
       if(!confirm('Excluir esta pendência?')) return;
@@ -1186,6 +1202,12 @@ function renderPendencias() {
     div.querySelector('.confirmar-acao-btn').addEventListener('click', async function() {
       var motivo = div.querySelector('.motivo-input').value.trim();
       await resolverPendenciaLocal(p, acaoAtual, motivo);
+    });
+    div.querySelector('.confirmar-reagendar-btn').addEventListener('click', async function() {
+      var dataPrevisao = div.querySelector('.reagendar-data-input').value;
+      var obs = div.querySelector('.reagendar-obs-input').value.trim();
+      var motivo = (dataPrevisao ? 'Previsão: '+dataPrevisao : '') + (obs ? ' · '+obs : '');
+      await resolverPendenciaLocal(p, 'Reagendado', motivo.trim());
     });
 
     el.appendChild(div);
