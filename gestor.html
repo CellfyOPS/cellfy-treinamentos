@@ -746,9 +746,25 @@ function renderHistorico() {
         r.participantesEsperados.map(function(n) {
           var ok=cNames.some(function(cn){return cn===(n.trim().toLowerCase());});
           var colab=colaboradores.find(function(c){return c.nome===n;});
-          var ferias=colab&&colab.status==='Férias';
-          var cls=ok?'confirmed':(ferias?'ferias':'pending');
-          var status=ok?'✓ Confirmado':(ferias?'🏖 Férias':'⏳ Pendente');
+          var colabStatus=colab?colab.status:'';
+          // Busca pendência específica para este colaborador neste treinamento
+          var pend=pendencias.find(function(p){
+            return p.colaborador===n && p.treinamentoId===r.id;
+          });
+          var cls,status;
+          if(ok){
+            cls='confirmed'; status='✓ Confirmado';
+          } else if(pend && pend.status==='Dispensado'){
+            cls='ferias'; status='🚫 Dispensado';
+          } else if(pend && pend.status==='Resolvido'){
+            cls='confirmed'; status='✓ Resolvido';
+          } else if(colabStatus==='Férias'){
+            cls='ferias'; status='🏖 Férias';
+          } else if(colabStatus==='Afastado'){
+            cls='ferias'; status='🤕 Afastado';
+          } else {
+            cls='pending'; status='⏳ Pendente';
+          }
           return '<div class="part-item '+cls+'"><span class="part-name">'+n+'</span><span class="part-status">'+status+'</span></div>';
         }).join('');
       // Mostra também confirmados que não estavam na lista esperada
