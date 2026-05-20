@@ -475,12 +475,14 @@ async function doLogin() {
   }
   currentUser = Object.assign({key:user}, u);
   resetTimer();
-  // Carrega tudo em paralelo
-  await Promise.all([carregarColaboradores(), carregarPendencias(), carregarTreinamentos()]);
+  // Mostra o app imediatamente com cache local
   iniciarApp();
-  // Já abre o histórico com dados carregados
-  await sincronizarConfirmados();
   renderHistorico();
+  // Carrega dados em background sem bloquear a entrada
+  Promise.all([carregarColaboradores(), carregarPendencias(), carregarTreinamentos()])
+    .then(function() {
+      sincronizarConfirmados().then(renderHistorico);
+    });
 }
 
 function iniciarApp() {
@@ -532,9 +534,14 @@ function switchView(v) {
     });
   }
   if(v==='painel') {
-    renderPainel(); // renderiza imediatamente
+    renderPainel(); // renderiza com cache imediatamente
+    var statsEl = document.getElementById('stats-grid');
+    if(statsEl) statsEl.style.opacity = '0.5';
     carregarTreinamentos().then(function() {
-      sincronizarConfirmados().then(renderPainel); // atualiza em background
+      sincronizarConfirmados().then(function() {
+        renderPainel();
+        if(statsEl) statsEl.style.opacity = '1';
+      });
     });
   }
   if(v==='equipe') {
@@ -1233,7 +1240,9 @@ document.addEventListener('DOMContentLoaded', async function() {
   });
   document.getElementById('btn-refresh-painel').addEventListener('click', async function(){
     var btn=this; btn.textContent='↻ Buscando...'; btn.disabled=true;
-    await sincronizarConfirmados(); renderPainel();
+    await carregarTreinamentos();
+    await sincronizarConfirmados();
+    renderPainel();
     btn.textContent='↻ Atualizar'; btn.disabled=false; showToast('Atualizado!');
   });
   document.getElementById('btn-novo-gestor').addEventListener('click', function(){
